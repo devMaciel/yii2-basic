@@ -1,14 +1,39 @@
 # Start Forms
---SiteController: criar o model request(post) validate, view
---Model: Formulario de Registro, model rules
---View: Formulário(widgets)
---View: Resposta do formulário
+  --SiteController: criar o model request(post) validate, view
+  --Model: Formulario de Registro, model rules
+  --View: Formulário(widgets)
+  --View: Resposta do formulário
 
 # Banco de Dados, ActiveRecord(sintaxe tipo eloquent(laravel))
---Criar ActiveRecord (models), [Customer]
---Checar conexão (config.db)
-----querybuilder https://www.yiiframework.com/doc/guide/2.0/pt-br/db-query-builder#query-methods
+  --Criar ActiveRecord (models), [Customer]
+  --Checar conexão (config.db)
+  ----querybuilder https://www.yiiframework.com/doc/guide/2.0/pt-br/db-query-builder#query-methods
 
---schema/table
---model: pais
---PaisController: active record query's
+  DB Browser SQLITE
+  --schema/table
+  --model: pais
+  --PaisController: active record query's
+  --'dsn' => 'sqlite:teste.sqlite', (cria banco em web->testesql)
+  --view: pasta da action e index, view render db
+
+# Gerando código com GII (https://www.yiiframework.com/doc/guide/2.0/pt-br/start-gii)
+  --Models 
+  --generate/overwrite - tableName - ModelClassName (pais-Pais), ctrl+c ou overwrite.
+
+  --generate crud
+  Model Class
+    app\models\Pais
+  Search Model Class
+    app\models\PaisSearch
+  Controller Class
+    app\controllers\PaisController
+  View Path
+    @app/views/pais
+  
+  --criar namespace do models, o PaisSearch é a nova do crud, adicona o controller
+    e a view, já criamos o controller model e view, e precisamos dar overwrite, 
+    para criar os códigos template com support ao crud.
+
+  urlparam: ?r=pais/index.
+  urlparam-pais(update/delete): ?r=pais%2Fview&id=SS
+

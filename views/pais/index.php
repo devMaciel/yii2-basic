@@ -1,19 +1,38 @@
 <?php
-  use yii\helpers\Html;
-  use yii\widgets\LinkPager;
+
+use yii\helpers\Html;
+use yii\grid\GridView;
+
+/* @var $this yii\web\View */
+/* @var $searchModel app\models\PaisSearch */
+/* @var $dataProvider yii\data\ActiveDataProvider */
+
+$this->title = 'Pais';
+$this->params['breadcrumbs'][] = $this->title;
 ?>
+<div class="pais-index">
 
-<!-- urlparam: ?r=pais/index -->
+    <h1><?= Html::encode($this->title) ?></h1>
 
-<h1>Países</h1>
-<ul>
-<?php foreach ($paises as $pais): ?>
-    <li>
-        <?= Html::encode("{$pais->nome} ({$pais->codigo})") ?>:
-        <?= $pais->populacao ?>
-    </li>
-<?php endforeach; ?>
-</ul>
+    <p>
+        <?= Html::a('Create Pais', ['create'], ['class' => 'btn btn-success']) ?>
+    </p>
 
-<!-- https://www.yiiframework.com/doc/api/2.0/yii-widgets-linkpager -->
-<?= LinkPager::widget(['pagination' => $paginacao]) ?>
+    <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
+
+    <?= GridView::widget([
+        'dataProvider' => $dataProvider,
+        'filterModel' => $searchModel,
+        'columns' => [
+            ['class' => 'yii\grid\SerialColumn'],
+
+            'codigo',
+            'nome',
+            'populacao',
+
+            ['class' => 'yii\grid\ActionColumn'],
+        ],
+    ]); ?>
+
+
+</div>
