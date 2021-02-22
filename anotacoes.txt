@@ -1,0 +1,5 @@
+# Start Forms
+--SiteController: criar o model request(post) validate, view
+--Model: Formulario de Registro, model rules
+--View: Formulário(widgets)
+--View: Resposta do formulário
