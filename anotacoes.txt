@@ -318,3 +318,233 @@
 
 
     Temos TEMAS, de widgets/modules e herança de temas
+
+    ----------TODO-----------
+    continuando na estrutura da documentação
+
+    Config de title dapágina normal, tipo layout
+
+    <?php
+      $this->title = 'Título da Minha Página';
+    ?>
+
+    e dentro do layout encoded
+    <title><?= Html::encode($this->title) ?></title>
+
+    META TAGS 
+    <?php
+    $this->registerMetaTag(['name' => 'keywords', 'content' => 'yii, framework, php']);
+    ?>
+
+    KEYWORDS 
+    <meta name="keywords" content="yii, framework, php">
+
+    TAG LINKS
+      $this->registerLinkTag([
+      'title' => 'Notícias sobre o Yii',
+      'rel' => 'alternate',
+      'type' => 'application/rss+xml',
+      'href' => 'http://www.yiiframework.com/rss.xml/',
+    ]);
+
+    codigo acima vai da nisso aqui:
+    <link title="Notícias sobre o Yii" rel="alternate" type="application/rss+xml" href="http://www.yiiframework.com/rss.xml/">
+
+    View também tem seus EVENTOS
+    EVENT_BEFORE_RENDER
+    EVENT_AFTER_RENDER
+    EVENT_BEGIN_PAGE
+    EVENT_END_PAGE
+    EVENT_BEGIN_BODY
+    EVENT_END_BODY
+
+
+    exemplo de renderizar data com yii2 com php
+    \Yii::$app->view->on(View::EVENT_END_BODY, function () {
+     echo date('Y-m-d');
+    });
+
+    Página estáticas são aquelas que não existem nada de param de database ou vem do
+    form.
+
+    public function actionAbout()
+    {
+        return $this->render('about');
+    }
+
+    para repetir varias paginas estaticas podemos colocar uma action"externa" standalone.
+
+
+    namespace app\controllers;
+
+    use yii\web\Controller;
+
+    class SiteController extends Controller
+    {
+        public function actions()
+        {
+            return [
+                'page' => [
+                    'class' => 'yii\web\ViewAction',
+                ],
+            ];
+        }
+    }
+
+
+  BOAS PRATICAS da view
+  Views são responsáveis por apresentar models (modelos) no formato que os usuários finais desejam. Em geral, views:
+
+  devem conter principalmente código de apresentação, tal como o HTML, e trechos simples de PHP para percorrer, formatar e renderizar dados.
+  não devem conter código de consulta ao banco de dados. Consultas assim devem ser feitas nos models.
+  devem evitar acessar diretamente os dados da requisição, tais como $_GET e $_POST pois essa tarefa cabe aos controllers. Se os dados da requisição forem necessários, deverão ser fornecidos às views pelos controllers.
+  podem ler as propriedades dos models, mas não devem alterá-las.
+  Para tornar as views mais gerenciáveis, evite criar views muito complexas ou que contenham muito código redundante. Você pode usar as seguintes técnicas para atingir este objetivo:
+
+  use layouts para representar as seções de apresentação comuns (por exemplo, cabeçalho e rodapé).
+  divida uma view complicada em varias outras menores. As views menores podem ser renderizadas e montadas em uma maior usando os métodos descritos anteriormente.
+  crie e use widgets como blocos de construção das views.
+  crie e use as classes helper (auxiliares) para transformar e formatar os dados nas views.
+
+  
+
+  MODULES
+
+  ==========================================
+    # SEGURANÇA
+
+      !!AUTENTICAÇÃO!!(https://www.yiiframework.com/doc/guide/2.0/pt-br/security-authentication)
+      
+      processo de verificação de identidade do usuário, nome/token/etc
+      ---yii\web\user 
+
+            return [
+            'components' => [
+                'user' => [
+                    'identityClass' => 'app\models\User',
+                ],
+            ],
+        ];
+
+      no caso precisamos da getAuthKey() e validateAuthKey(), para validar usuario, porém
+      neste link temos outros métodos, e também se gravamos em cookie o user.
+
+      Para logar um usuário, você pode usar o seguinte código:
+
+      // encontrar uma identidade de usuário com o nome de usuário especificado.
+      // observe que você pode querer checar a senha se necessário
+      $identity = User::findOne(['username' => $username]);
+
+      // logar o usuário
+      Yii::$app->user->login($identity);
+
+      Para realizar o logout de um usuário, simplesmente chame:
+
+      Yii::$app->user->logout();
+
+      ele também destruirá todos os dados da sessão do usuário. 
+      Se você quiser guardar os dados da sessão, você deve chamar 
+      Yii::$app->user->logout(false).
+
+      existe também EVENTOS para autenticação
+      EVENT_BEFORE_LOGIN
+      EVENT_AFTER_LOGIN
+      EVENT_BEFORE_LOGOUT
+      EVENT_AFTER_LOGOUT
+    
+
+
+    !!AUTORIZAÇÃO!! (https://www.yiiframework.com/doc/guide/2.0/pt-br/security-authorization)
+
+    verifica se o user tem permissão para fazer algo dentro da app.
+    oferece o Filtro de Controle de Acesso(ACF) e Controle de Acesso Baseado em Role (RBAC)
+
+    ACF apenas no controller, varias rules, e permissões que o usuário poderá fazer.
+    behaviors = comportamento
+
+    use yii\web\Controller;
+    use yii\filters\AccessControl;
+
+    class SiteController extends Controller
+    {
+      public function behaviors()
+      {
+          return [
+              'access' => [
+                  'class' => AccessControl::className(),
+                  'only' => ['login', 'logout', 'signup'],
+                  'rules' => [
+                      [
+                          'allow' => true,
+                          'actions' => ['login', 'signup'],
+                          'roles' => ['?'],
+                      ],
+                      [
+                          'allow' => true,
+                          'actions' => ['logout'],
+                          'roles' => ['@'],
+                      ],
+                  ],
+              ],
+          ];
+      }
+      // ...
+    }
+
+
+    deny callbacks
+
+      [
+    'class' => AccessControl::className(),
+    ...
+    'denyCallback' => function ($rule, $action) {
+        throw new \Exception('Você não está autorizado a acessar esta página');
+        }
+      ]
+
+    
+    temos um exemplo também de matchCallBack, lógica de validação de acesso,
+    no caso, uma página disponível somente em uma certa data.
+
+    use yii\filters\AccessControl;
+
+    class SiteController extends Controller
+    {
+      public function behaviors()
+      {
+          return [
+              'access' => [
+                  'class' => AccessControl::className(),
+                  'only' => ['special-callback'],
+                  'rules' => [
+                      [
+                          'actions' => ['special-callback'],
+                          'allow' => true,
+                          'matchCallback' => function ($rule, $action) {
+                              return date('d-m') === '31-10';
+                          }
+                      ],
+                  ],
+              ],
+          ];
+      }
+
+      // Match callback chamada! Esta página pode ser acessado somente a cada 31 de outubro
+      public function actionSpecialCallback()
+      {
+          return $this->render('happy-halloween');
+      }
+    }
+
+
+    RBAC
+      uma role representa coleção de permissão.(criar posts, atualizar posts etc);
+      pode ser atribuída a um ou vários usuários.
+
+  então temos a config do phpManager ou DbManager, que é feito pela config em components
+  ++rbac (rolesPadrões);
+
+
+
+
+
