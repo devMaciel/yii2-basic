@@ -3,3 +3,12 @@
 --Model: Formulario de Registro, model rules
 --View: Formulário(widgets)
 --View: Resposta do formulário
+
+# Banco de Dados, ActiveRecord(sintaxe tipo eloquent(laravel))
+--Criar ActiveRecord (models), [Customer]
+--Checar conexão (config.db)
+----querybuilder https://www.yiiframework.com/doc/guide/2.0/pt-br/db-query-builder#query-methods
+
+--schema/table
+--model: pais
+--PaisController: active record query's

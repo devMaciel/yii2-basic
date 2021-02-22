@@ -9,6 +9,7 @@ use yii\web\Response;
 use yii\filters\VerbFilter;
 use app\models\LoginForm;
 use app\models\ContactForm;
+use app\models\Customer;
 use app\models\FormularioDeRegistro;
 
 class SiteController extends Controller
@@ -135,7 +136,7 @@ class SiteController extends Controller
     }
 
     //=============================
-    // Models
+    // Models "/?r=site/registro"
     public function actionRegistro()
     {
         $model = new FormularioDeRegistro();
@@ -151,5 +152,16 @@ class SiteController extends Controller
             # refresh() - redirect()
             return $this->render('registro', ['model' => $model]);
         }
+
+        //=============================
+        // Models - Query's
+        // retorna todos customers ativos e os ordena por seus IDs
+        // SELECT * FROM `customer` WHERE `status` = 1 ORDER BY `id`
+        // $customers = Customer::find()
+        // ->where(['status' => Customer::STATUS_ACTIVE])
+        // ->orderBy('id')
+        // ->all();
+
+
     }
 }
