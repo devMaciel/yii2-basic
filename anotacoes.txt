@@ -37,3 +37,284 @@
   urlparam: ?r=pais/index.
   urlparam-pais(update/delete): ?r=pais%2Fview&id=SS
 
+# Seguindo em Frente (https://www.yiiframework.com/doc/guide/2.0/pt-br/start-looking-ahead)
+- Docs (classes) - https://www.yiiframework.com/doc/api/2.0/index
+- Wiki (forum/stack somente o yii2) - https://www.yiiframework.com/wiki?tag=yii2
+- O Guia - https://www.yiiframework.com/doc/guide/2.0/pt-br
+- Plugins/Extensões do yii2 - https://www.yiiframework.com/extensions
+
+# Estrutura da Aplicação
+- https://www.yiiframework.com/doc/guide/2.0/pt-br/structure-overview
+-- Defined(const) em scripts de entrada, (modo web, console)
+  EXEMPLO DO SCRIPT DE entrada
+    require __DIR__ . '/../vendor/autoload.php';
+    require __DIR__ . '/../vendor/yiisoft/yii2/Yii.php';
+
+    // carrega a configuração da aplicação
+    $config = require __DIR__ . '/../config/web.php';
+
+    // instancia e configura a aplicação
+    (new yii\web\Application($config))->run();
+  
+  temos este arquivo rodando nosso basic app, temos as constantes/autoloads/vendor.
+
+  Propiedades da App, required.
+  id;basePath, 
+    id geralmente ja vem um, a nao ser que tenha mais de uma app.
+    basePath, caminho da app, do codfont, podemos criar aliases(atalhos), base path(@app)
+
+    Exemplo de ALIASES
+    [
+      [
+        'aliases' => [
+          '@name1' => 'path/to/path1',
+          '@name2' => 'path/to/path2',
+      ],
+    ]
+
+  bootstrap da app
+  -array de componentes, modulos, regras da app, que pode ser carregado junto com a app.
+    exemplo do debug e o gii
+
+  outras propriedades:
+  --catchAll, pega todas requisições web para mostrar.
+  --components - consegue armazenar lista de components, como cache/users/autologin etc
+    tipo um bootstraping
+  --ControllerMap, pega o controller e configura algumas coisas, como csrf token.
+  --ControllerNamespace, como nome ja diz, consegue modificar o namespace do controller.
+  --language, muda linguangem para o usuario final, padrão. 
+  --modules, modules e configurações, ex: da config da database.
+  --names/--params/--sourceLanguage/--timeZone/--version/--charset
+    --defaultRoute/--extensions(plugins)
+  
+  --layout, layout da app, headers/footers etc, /--layoutPath
+  --runtimePath, arquivos temporários/cache
+  --viewpath/--vendorPath
+
+  EVENTOS DA APLICAÇÃO
+  [
+    'on beforeRequest' => function ($event) {
+        // ...
+    },
+  ]
+
+  EVENT_BEFORE_REQUEST (antes do post)
+  EVENT_AFTER_REQUEST  (depois do post)
+  EVENT_BEFORE_ACTION   (antes de executar cada action controller)
+  EVENT_AFTER_ACTION    (depois de executar cada action controller)
+
+  LIFE CICLE
+  -Script de entrada, carrega as config como array
+  
+  -- cria uma nova instancia da app
+  --- preInit() config alta prioridade como o basePath
+  --- config das propriedades da app
+  --- init() chama o bootstrap() roda os components de inicialização
+
+  ---- yii2 app run..
+  ---- dispara os eventos, os before
+  ---- resolve as rotas, params, model, controllers actions
+  ---- dispara os eventos after 
+  ---- envia resposta pro final user.
+
+  ----- status code e completa o processamento.
+
+  MVC
+  Controllers/Rotas
+  --Rotas é baseado na action e nos controllers
+  Segue alguns exemplos, assumindo que o namespace do controller tenha por 
+  padrão o valor app\controllers:
+
+  article torna-se app\controllers\ArticleController;
+  post-comment torna-se app\controllers\PostCommentController;
+  admin/post-comment torna-se app\controllers\admin\PostCommentController;
+  adminPanels/post-comment torna-se app\controllers\adminPanels\PostCommentController.
+
+  também é possível mapear os controllers, para seguir um padrão, quando vem de crosssite.
+  [
+    'controllerMap' => [
+        // declara o controller "account" usando um nome de classe
+        'account' => 'app\controllers\UserController',
+
+        // declara o controller "article" usando uma configuração em array
+        'article' => [
+            'class' => 'app\controllers\PostController',
+            'enableCsrfValidation' => false,
+        ],
+    ],
+  ]
+
+  Segue algumas boas práticas em destaque. Os controllers:
+
+  podem acessar os dados de uma requisição;
+
+  podem chamar os métodos dos models e outros componentes de serviço com dados 
+  da requisição;
+  podem usar as views para compor as respostas;
+
+  NÃO devem processar os dados da requisição - isto deve ser feito na 
+  camada model (modelo);
+
+  devem evitar inserir códigos HTML ou outro código de apresentação - é 
+  melhor que sejam feitos nas views.
+
+  Models
+  -temos nossos request;rules/validations/atributos, nossa conexão com algumas
+    tabela do db que passa pro controller dps como variável/const.
+
+  atribuição em massa, podemos fazer apenas com atributos seguros(safe)
+  public function rules()
+  {
+      return [
+          [['title', 'description'], 'safe'],
+      ];
+  }
+
+  não seguros podemos colocar !
+  public function scenarios()
+  {
+      return [
+          'login' => ['username', 'password', '!secret'],
+      ];
+  }
+
+  na exportação de dados, são convertidos em arrays, porém podemos especificar depois
+  para retornar um outro tipo de dado.
+
+  boas praticas no model
+  Em resumo, os models (modelos):
+
+  podem conter atributos para representar os dados de negócio;
+  podem conter regras de validação para garantir a validade e integridade dos dados;
+  podem conter métodos para implementar lógicas de negócio;
+  NÃO devem acessar diretamente as requisições, sessões ou quaisquer dados do ambiente do usuário. Os models (modelos) devem receber estes dados a partir dos controllers (controladores);
+  devem evitar inserir HTML ou outros códigos de apresentação – isto deve ser feito nas views (visões);
+  devem evitar ter muitos cenários em um único model (modelo).
+
+  Views 
+  --Segurança, sobre Html::encode, codifica o nome de usuario antes de exibi-lo
+
+      <?php
+      use yii\helpers\Html;
+      ?>
+
+      <div class="username">
+          <?= Html::encode($user->name) ?>
+      </div>
+
+    Exibir conteúdo html, filtrar conteudo primeiro, ele é mais lento, então é melhor
+    guardar em cache, se for usar muitas vezes.
+
+      <?php
+      use yii\helpers\HtmlPurifier;
+      ?>
+
+      <div class="post">
+          <?= HtmlPurifier::process($post->text) ?>
+      </div>
+
+    
+    além da render() temos outros tipos de render()...
+
+    Nos controllers, você pode chamar os seguintes métodos para renderizar as views:
+
+    render(): renderiza uma view nomeada e aplica um layout ao resultado da renderização.
+    renderPartial(): renderiza uma view nomeada sem qualquer layout.
+    renderAjax(): renderiza uma view nomeada sem qualquer layout e injeta todos os arquivos JS/CSS registrados. É geralmente utilizado em respostas de requisições Web Ajax.
+    renderFile(): renderiza uma view a partir de um caminho de arquivo ou a partir de um alias.
+    renderContent(): renderiza um conteúdo estático que será incorporado no layout selecionado. Este método está disponível desde a versão 2.0.1.
+
+    na renderização de widgets podemos utiliar as seguintes:
+    render(): renderiza uma view nomeada.
+    renderFile(): renderiza uma view a partir de um caminho de arquivo ou a partir de um alias.
+
+    podemos renderizar uma view dentro de outra:
+    render(): renderiza uma view nomeada.
+    renderAjax(): renderiza uma view nomeada sem qualquer layout e injeta todos os arquivos JS/CSS registrados. É geralmente utilizado em respostas de requisições Web Ajax.
+    renderFile(): renderiza uma view a partir de um caminho de arquivo ou a partir de um alias.
+
+    <?= $this->render('_visao-geral') ?>
+
+    renderização de outros lugares, no código
+    // exibe a view "@app/views/site/license.php"
+    echo \Yii::$app->view->renderFile('@app/views/site/license.php');
+
+    Compartilhando Dados entre as Views
+    O componente view fornece a propriedade params que você pode usar para compartilhar dados entre as views.
+
+    Por exemplo, em uma view sobre, você pode ter o seguinte código que especifica o seguimento atual do "rastro de navegação" (breadcrumbs):
+
+    $this->params['breadcrumbs'][] = 'Sobre nós';
+    Em seguida, no arquivo layout, que também é uma view, você pode exibir o "rastro de navegação" (breadcrumbs) usando os dados passados pela propriedade params:
+
+    <?= yii\widgets\Breadcrumbs::widget([
+        'links' => isset($this->params['breadcrumbs']) ? $this->params['breadcrumbs'] : [],
+    ]) ?>
+
+
+
+
+    Exemplo de layout, header/footer - content
+
+    <?php
+      use yii\helpers\Html;
+
+      /* @var $this yii\web\View */
+      /* @var $content string */
+      ?>
+      <?php $this->beginPage() ?>
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8"/>
+          <?= Html::csrfMetaTags() ?>
+          <title><?= Html::encode($this->title) ?></title>
+          <?php $this->head() ?>
+      </head>
+      <body>
+      <?php $this->beginBody() ?>
+          <header>Minha Empresa</header>
+          <?= $content ?>
+          <footer>&copy; 2014 por Minhas Empresa</footer>
+      <?php $this->endBody() ?>
+      </body>
+      </html>
+      <?php $this->endPage() ?>
+
+
+
+      Podemos utilizar layouts aninhados
+
+      <?php $this->beginContent('@app/views/layouts/base.php'); ?>
+
+      ...conteúdoo do layout filho aqui...
+
+      <?php $this->endContent(); ?>
+
+      
+      podemos definir blocos no meio do layout também
+      <?php $this->beginBlock('bloco1'); ?>
+
+      ...conteúdoo do bloco1...
+
+      <?php $this->endBlock(); ?>
+
+      ...
+
+      <?php $this->beginBlock('bloco3'); ?>
+
+      ... conteúdoo do bloco3...
+
+      <?php $this->endBlock(); ?>
+
+      
+      dai no layout temos que colocar o content do bloco também;
+      ...
+      <?php if (isset($this->blocks['bloco1'])): ?>
+          <?= $this->blocks['bloco1'] ?>
+      <?php else: ?>
+          ... conteúdoo padrãoo para o bloco1 ...
+      <?php endif; ?>
+
+
+    Temos TEMAS, de widgets/modules e herança de temas
