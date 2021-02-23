@@ -682,8 +682,585 @@
   ==========================================
     # TRATANDO REQUISIÇÕES  
 
-    
+    visão geral de como funciona em imagem.
+    depois falamos da inicialização - bootstrapping
+    roteamento e criação de url, que é feita pelo UrlManager
+    que já vimos também sobre o prettyUrl
 
+      use yii\helpers\Url;
+
+      // Url::to() chama UrlManager::createUrl() para criar uma URL
+      $url = Url::to(['post/view', 'id' => 100]);
+    
+    que geralmente fica assim
+      /index.php?r=post/view&id=100
+      /index.php/post/100
+      /posts/100
+
+  rotemando vai criando 'automaticamente' com base no controller view etc
+  precisamos nomear as pastas corretamentas e feita pelas actions.
+
+  temos rotaPadrão
+    [
+      // ...
+      'defaultRoute' => 'main/index',
+    ];
+  
+  rota catchAll
+    pega todas rotas, talvez para fazer manutenção
+    [
+      // ...
+      'catchAll' => ['site/offline'],
+    ];
+
+  Para Criar URL's temos o Url::to
+
+    use yii\helpers\Url;
+
+  // cria uma URL para uma rota: /index.php?r=post/index
+  echo Url::to(['post/index']);
+
+  // cria uma URL para uma rota com parâmetros: /index.php?r=post/view&id=100
+  echo Url::to(['post/view', 'id' => 100]);
+
+  // cria uma URL ancorada: /index.php?r=post/view&id=100#content
+  echo Url::to(['post/view', 'id' => 100, '#' => 'content']);
+
+  // cria uma URL absoluta: http://www.example.com/index.php?r=post/index
+  echo Url::to(['post/index'], true);
+
+  // cria uma URL absoluta usando https: https://www.example.com/index.php?r=post/index
+  echo Url::to(['post/index'], 'https');
+
+
+  podemos setar alias também para url não relacionadas.
+
+  use yii\helpers\Url;
+
+    // rota atual requerida: /index.php?r=admin/post/index
+    echo Url::to();
+
+    // uma alias da URL: http://example.com
+    Yii::setAlias('@example', 'http://example.com/');
+    echo Url::to('@example');
+
+    // uma URL absoluta: http://example.com/images/logo.gif
+    echo Url::to('/images/logo.gif', true);
+
+
+  além to url::to() temos outras aqui.
+
+    use yii\helpers\Url;
+
+    // URL da página inicial: /index.php?r=site/index
+    echo Url::home();
+
+    // URL base, útil se a aplicação for implementada em uma subpasta da pasta raiz do servidor Web
+    echo Url::base();
+
+    // A URL canônica da requisição atual
+    // Veja mais detalhes em https://en.wikipedia.org/wiki/Canonical_link_element
+    echo Url::canonical();
+
+    // Obtêm a URL da requisição anterior para reutilizá-la em requisições futuras
+    Url::remember();
+    echo Url::previous();
+
+  
+    para usar as PRETTY URL
+
+      [
+          'components' => [
+              'urlManager' => [
+                  'enablePrettyUrl' => true,
+                  'showScriptName' => false,
+                  'enableStrictParsing' => false,
+                  'rules' => [
+                      // ...
+                  ],
+              ],
+          ],
+      ]
+
+  então temos mais coisas aqui sobre as regras da url e param nomeados
+  https://www.yiiframework.com/doc/guide/2.0/pt-br/runtime-routing
+
+  temos o sufixo na url.
+
+      [
+        'components' => [
+            'urlManager' => [
+                'enablePrettyUrl' => true,
+                'showScriptName' => false,
+                'enableStrictParsing' => true,
+                'suffix' => '.html',
+                'rules' => [
+                    // ...
+                    [
+                        'pattern' => 'posts',
+                        'route' => 'post/index',
+                        'suffix' => '.json',
+                    ],
+                ],
+            ],
+        ],
+    ]
+
+  
+  métodos HTTP
+
+    [
+      'PUT,POST post/<id:\d+>' => 'post/create',
+      'DELETE post/<id:\d+>' => 'post/delete',
+      'post/<id:\d+>' => 'post/view',
+    ] 
+
+  temos como criar classes de regras, que vem da UrlRule, mas é flexível para alterar
+  é uma mãozinha.
+  
+  caso a url use o mesmo prefixo em seus padrões e rotas, temos o groupUrlRule.
+  
+
+
+  REQUISIÇÕES
+
+  temos nossos parâmetros de requisição, $_GET $_POST.
+
+      $request = Yii::$app->request;
+
+    $get = $request->get(); 
+    // equivalente à: $get = $_GET;
+
+    $id = $request->get('id');   
+    // equivalente à: $id = isset($_GET['id']) ? $_GET['id'] : null;
+
+    $id = $request->get('id', 1);   
+    // equivalente à: $id = isset($_GET['id']) ? $_GET['id'] : 1;
+
+    $post = $request->post(); 
+    // equivalente à: $post = $_POST;
+
+    $name = $request->post('name');   
+    // equivalente à: $name = isset($_POST['name']) ? $_POST['name'] : null;
+
+    $name = $request->post('name', '');   
+    // equivalente à: $name = isset($_POST['name']) ? $_POST['name'] : '';
+
+    temos ai algumas coisitas.
+
+  para restful api, enviados pleo metodos put patch.
+  $request = Yii::$app->request;
+
+  // retorna todos os parâmetros 
+  $params = $request->bodyParams;
+
+  // retorna o parâmetro "id"
+  $param = $request->getBodyParam('id');
+
+
+  métodos de requisição
+  $request = Yii::$app->request;
+  if ($request->isAjax) { /* a requisição é uma requisição Ajax */ }
+  if ($request->isGet)  { /* o método da requisição é GET */ }
+  if ($request->isPost) { /* o método da requisição é POST */ }
+  if ($request->isPut)  { /* o método da requisição é PUT */ }
+  
+  URLs da requisição
+    temos pelo componente request, muitas formas de inspecionar a atual url da request.
+
+    url - retorna a url sem info de protocolos e dominio 
+      (/admin/index.php/product?id=100)
+
+    absoluteUrl - url completoa, incluindo info do protocolo e dominio
+      (http://example.com/admin/index.php/product?id=100)
+    
+    hostInfo - retorn o que são as info de protocolo e dominio
+      (http://example.com)
+
+    pathInfo - informa depois do script de etnrada e antes da interroção(query string)
+      (/product)
+
+    queryString - retorna a info depois da query string
+      (id=100)
+
+    baseUrl - retorna a info depois do dominio e antes do script de entrada
+      (/admin)
+
+    scriptUrl - retorna a info depois do dominio ate o script de entrada.
+      (/admin/index.php)
+
+    serverName - retorna o dominio da url
+      (example.com)
+
+    serverPort - retorna qual ap orta utilizada pelo servidor web
+      (80)
+
+
+  Header(cabeçalho) HTTP
+
+  // $headers é um objeto de yii\web\HeaderCollection 
+  $headers = Yii::$app->request->headers;
+
+  // retorna o valor do cabeçalho Accept
+  $accept = $headers->get('Accept');
+
+  if ($headers->has('User-Agent')) { /* existe o cabeçalho User-Agent */ }
+
+  assim como algumas outras coisas como
+  -userAgent
+  -contentType
+  -acceptableContentTypes
+  -acceptableLanguages
+
+  Informações do Cliente ( host e IP )
+  $userHost = Yii::$app->request->userHost;
+  $userIP = Yii::$app->request->userIP;
+
+  RESPOSTAS(RESPONSES) 
+  https://www.yiiframework.com/doc/guide/2.0/pt-br/runtime-responses
+    temos o status code
+    Yii::$app->response->statusCode = 200;
+
+  alguns verbos http mais comuns
+  400 - bad request
+  404 - not found
+  409 - conflit HttpException
+  403 - forbidden ..
+  410 - gone
+  405 - method not allowed
+  406 - not accepttable
+  500 - server error
+  429 - too many request
+  401 - unauthorized
+  415 - unsupported media type
+
+  sobre http headers, response HeaderCollection
+
+  Response Body
+
+    Yii::$app->response->content = 'hello world!';
+
+  também podemos formatar como vai vir a 'data'
+
+    $response = Yii::$app->response;
+    $response->format = \yii\web\Response::FORMAT_JSON;
+    $response->data = ['message' => 'hello world'];
+
+  yii suporta
+  -html
+  -xml
+  -json
+  -jsonp 
+  -raw
+
+  public function actionInfo()
+  {
+      \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+      return [
+          'message' => 'hello world',
+          'code' => 100,
+      ];
+  }
+
+  temos nosso Redirect, e status code.
+  
+  public function actionOld()
+  {
+      return $this->redirect('http://example.com/new', 301);
+  }
+
+  \Yii::$app->response->redirect('http://example.com/new', 301)->send();
+
+  para x-redirect - ajax(async)
+  https://www.yiiframework.com/doc/api/2.0/yii-web-response#redirect()-detail
+
+
+  Enviando Files
+  public function actionDownload()
+  {
+      return \Yii::$app->response->sendFile('path/to/file.txt');
+  }
+
+  se chamar de outro lugar que nao for do actionMethod
+    \Yii::$app->response->sendFile('path/to/file.txt')->send();
+
+  
+  Enviando Resposta, tem a estrutura de como é enviado as response.
+
+
+  SESSÕES E COOKIES
+  para abrir e fechar sessões.
+
+  $session = Yii::$app->session;
+
+  // verifica se a sessão está pronta para abrir
+  if ($session->isActive) ...
+
+  // abre uma sessão
+  $session->open();
+
+  // fecha uma sessão
+  $session->close();
+
+  // destrói todos os dados registrados em uma sessão.
+  $session->destroy();
+
+  
+  para acessar dados da sessão
+
+  $session = Yii::$app->session;
+
+  // obter uma variável de sessão. Os exemplos abaixo são equivalentes:
+  $language = $session->get('language');
+  $language = $session['language'];
+  $language = isset($_SESSION['language']) ? $_SESSION['language'] : null;
+
+  // definir uma variável de sessão. Os exemplos abaixo são equivalentes:
+  $session->set('language', 'en-US');
+  $session['language'] = 'en-US';
+  $_SESSION['language'] = 'en-US';
+
+  // remover uma variável de sessão. Os exemplos abaixo são equivalentes:
+  $session->remove('language');
+  unset($session['language']);
+  unset($_SESSION['language']);
+
+  // verifica se a variável de sessão existe. Os exemplos abaixo são equivalentes:
+  if ($session->has('language')) ...
+  if (isset($session['language'])) ...
+  if (isset($_SESSION['language'])) ...
+
+  // percorrer todas as variáveis de sessão. Os exemplos abaixo são equivalentes:
+  foreach ($session as $name => $value) ...
+  foreach ($_SESSION as $name => $value) ...
+
+
+  Session de arrays
+  $session = Yii::$app->session;
+
+  // o seguinte código não funciona
+  $session['captcha']['number'] = 5;
+  $session['captcha']['lifetime'] = 3600;
+
+  // o seguinte código funciona:
+  $session['captcha'] = [
+      'number' => 5,
+      'lifetime' => 3600,
+  ];
+
+  // o seguinte código também funciona:
+  echo $session['captcha']['lifetime'];
+
+
+
+  temos soluções diferente pelo yii
+  $session = Yii::$app->session;
+
+  // use diretamente $_SESSION (certifique-se que Yii::$app->session->open() tenha sido chamado)
+  $_SESSION['captcha']['number'] = 5;
+  $_SESSION['captcha']['lifetime'] = 3600;
+
+  // obter todo o array primeiro, modificá-lo e depois salvá-lo
+  $captcha = $session['captcha'];
+  $captcha['number'] = 5;
+  $captcha['lifetime'] = 3600;
+  $session['captcha'] = $captcha;
+
+  // use ArrayObject em vez de array
+  $session['captcha'] = new \ArrayObject;
+  ...
+  $session['captcha']['number'] = 5;
+  $session['captcha']['lifetime'] = 3600;
+
+  // armazenar dados de array utilizando chaves com um prefixo comum
+  $session['captcha.number'] = 5;
+  $session['captcha.lifetime'] = 3600;
+
+
+  podemos salvar em session personalizadas, porem requer mais configurações
+  como armazenar direto em cache ou db, porém é preciso criar database e outras
+  configurações.
+
+  Dados Flash
+  -dado especial de sessao, só estão disponivies na proxima requisição e serão 
+    automaticamente excluido depois. geralmente implementado para mensagens
+
+    $session = Yii::$app->session;
+
+    // Request #1
+    // defini uma mensagem flash chamada "postDeleted"
+    $session->setFlash('postDeleted', 'You have successfully deleted your post.');
+
+    // Request #2
+    // exibe uma mensagem flash chamada "postDeleted"
+    echo $session->getFlash('postDeleted');
+
+    // Request #3
+    // $result será falso uma vez que a mensagem flash foi automaticamente excluída
+    $result = $session->hasFlash('postDeleted');
+
+
+    podemos utilizar isto juntamente com o ALERT widget
+    echo Alert::widget([
+      'options' => ['class' => 'alert-info'],
+      'body' => Yii::$app->session->getFlash('postDeleted'),
+    ]);
+
+    Temos os COOKIES.
+      // pega a coleção de cookie  (yii\web\CookieCollection) do componente "request"
+    $cookies = Yii::$app->request->cookies;
+
+    // pega o valor do cookie "language". se o cookie não existir, retorna "en" como o valor padrão.
+    $language = $cookies->getValue('language', 'en');
+
+    // um caminho alternativo para pegar o valor do cookie "language"
+    if (($cookie = $cookies->get('language')) !== null) {
+        $language = $cookie->value;
+    }
+
+    // você também pode usar $cookies como um array
+    if (isset($cookies['language'])) {
+        $language = $cookies['language']->value;
+    }
+
+    // verifica se existe um cookie "language"
+    if ($cookies->has('language')) ...
+    if (isset($cookies['language'])) ...
+
+
+    Enviando Cookies para o usuário final
+    // pega a coleção de cookie (yii\web\CookieCollection) do componente "response"
+    $cookies = Yii::$app->response->cookies;
+
+    // adicionar um novo cookie a resposta que será enviado
+    $cookies->add(new \yii\web\Cookie([
+        'name' => 'language',
+        'value' => 'zh-CN',
+    ]));
+
+    // remove um cookie
+    $cookies->remove('language');
+    // outra alternativa para remover um cookie
+    unset($cookies['language']);
+
+    temos também a validação de cookie
+    tudo que vier pelo setcookie ou $_COOKIE nao serão validados.
+
+    return [
+        'components' => [
+            'request' => [
+                'cookieValidationKey' => 'fill in a secret key here',
+            ],
+        ],
+    ];
+
+
+  TRATAMENTO DE ERROS
+  YII_ENABLE_ERROR_HANDLER é true, no script de entrada.
+      return [
+      'components' => [
+          'errorHandler' => [
+              'maxSourceLines' => 20,
+          ],
+      ],
+    ];
+
+    retorna isto ai de cima e podemos fazer com try catch esse tratament de errors
+      use Yii;
+      use yii\base\ErrorException;
+
+      try {
+        10/0;
+      } catch (ErrorException $e) {
+        Yii::warning("Division by zero.");
+      }
+
+
+  podemos dar throw error caso usuario faça uma requisição invalida ou inesperada.
+  o manipulador de erro dira o status code corretamente.
+
+  use yii\web\NotFoundHttpException;
+
+  throw new NotFoundHttpException();
+
+  o YII_DEBUG em dev fica true, em producao setams pra false. que vai personalizar 
+  a exibição de erro corretamente. utiliza a view;
+  @yii/views/errorHandler/error.php
+  @yii/views/errorHandler/exception.php
+
+  depois na url temos como tratar errors usando action configurando etc.
+  https://www.yiiframework.com/doc/guide/2.0/pt-br/runtime-handling-errors
+
+
+  GERENCIAMENTO DE LOGS
+
+    yii fornece logs personalizaveis.
+    -registrar mensagens de log 
+    -configurar o destino do log 
+    -examinar as msg de erro exportadas
+
+    POdemos gravar mensagens com
+    Yii::debug() - grava msg para reastrear como um determinado trecho de codfont
+    Yii::info() - grava msg q transmit algumas informações uteis
+    Yii::warning() - grava msg de aviso que indica algo inesperado aconteceu
+    Yii::error() - grava fatalerror
+
+    Destinos de log
+    - é uma instancia de classe, filtra niveis e categoria e exporta pra algum meio.
+    ex:banco de dados etc.
+    --é preciso configurar component da aplicação dai.
+          return [
+        // o componente  "log" deve ser carregado durante o tempo de inicialização
+        'bootstrap' => ['log'],
+        
+        'components' => [
+            'log' => [
+                'targets' => [
+                    [
+                        'class' => 'yii\log\DbTarget',
+                        'levels' => ['error', 'warning'],
+                    ],
+                    [
+                        'class' => 'yii\log\EmailTarget',
+                        'levels' => ['error'],
+                        'categories' => ['yii\db\*'],
+                        'message' => [
+                          'from' => ['log@example.com'],
+                          'to' => ['admin@example.com', 'developer@example.com'],
+                          'subject' => 'Database errors at example.com',
+                        ],
+                    ],
+                ],
+            ],
+        ],
+      ];
+
+      este componente de log deve ser carregado durante a inicialização, por isto
+      ele fica no boostrap.
+
+      os logs podem ser dispachados pra varios lugares.
+      -é preciso consultar a API, por exemplo
+      --envia pra um banco de dados, ou email, ou em arquivos, ou em syslog do php.
+
+      Filtragem de mensagem
+      -error
+      -warning
+      -info
+      -trace
+      -profile
+
+      podemos formatar mensagem, por padrão É
+      Timestamp [IP address][User ID][Session ID][Severity Level][Category] Message Text
+
+      e temos mais outras coisas complexas com log, como nivel de rastreio
+      libertação e exportação de mensagens, alternar destino de log, criar novos Destinos
+      perfil de desempenho
+
+    
+  ==========================================
+    # CONCEITOS CHAVES 
+      
+      Componentes
 
   ==========================================
     # SEGURANÇA
