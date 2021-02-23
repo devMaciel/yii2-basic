@@ -1668,10 +1668,362 @@
   ==========================================
     # TRABALHANDO COM BANCO DE DADOS 
 
+  no yii temos alguns db que já podemos fazer conexão mais facilmente
+  -mysql
+  -mariadb
+  -sqlite
+  -postgree
+  -cubrid
+  -oracle
+  -mssql
+
+  temos todas configs para cada um.
+
+  podemos criar nossas query's mas nao diz aonde.
+  // return a set of rows. each row is an associative array of column names and values.
+  // an empty array is returned if the query returned no results
+  $posts = Yii::$app->db->createCommand('SELECT * FROM post')
+              ->queryAll();
+
+  // return a single row (the first row)
+  // false is returned if the query has no result
+  $post = Yii::$app->db->createCommand('SELECT * FROM post WHERE id=1')
+            ->queryOne();
+
+  // return a single column (the first column)
+  // an empty array is returned if the query returned no results
+  $titles = Yii::$app->db->createCommand('SELECT title FROM post')
+              ->queryColumn();
+
+  // return a scalar value
+  // false is returned if the query has no result
+  $count = Yii::$app->db->createCommand('SELECT COUNT(*) FROM post')
+              ->queryScalar();
+
+
+  BINDING PARAMETERS
+
+  para uma questao melhor de segurança/validação, podemos dar bind nos values/param
+  que recebem.
+  $post = Yii::$app->db->createCommand('SELECT * FROM post WHERE id=:id AND status=:status')
+           ->bindValue(':id', $_GET['id'])
+           ->bindValue(':status', 1)
+           ->queryOne();
 
 
 
+  NON SQL Query's 
+  // INSERT (table name, column values)
+  Yii::$app->db->createCommand()->insert('user', [
+      'name' => 'Sam',
+      'age' => 30,
+  ])->execute();
 
+  // UPDATE (table name, column values, condition)
+  Yii::$app->db->createCommand()->update('user', ['status' => 1], 'age > 30')->execute();
+
+  // DELETE (table name, condition)
+  Yii::$app->db->createCommand()->delete('user', 'status = 0')->execute();
+
+
+  temos batch insert para adicionar algum comando.
+  // table name, column names, column values
+  Yii::$app->db->createCommand()->batchInsert('user', ['name', 'age'], [
+      ['Tom', 30],
+      ['Jane', 20],
+      ['Linda', 25],
+  ])->execute();
+
+
+  no database schema é feito com o yii DAO, e alguns métodos.
+  createTable(): creating a table
+  renameTable(): renaming a table
+  dropTable(): removing a table
+  truncateTable(): removing all rows in a table
+  addColumn(): adding a column
+  renameColumn(): renaming a column
+  dropColumn(): removing a column
+  alterColumn(): altering a column
+  addPrimaryKey(): adding a primary key
+  dropPrimaryKey(): removing a primary key
+  addForeignKey(): adding a foreign key
+  dropForeignKey(): removing a foreign key
+  createIndex(): creating an index
+  dropIndex(): removing an index
+
+  exemplo de uso:
+  // CREATE TABLE
+  Yii::$app->db->createCommand()->createTable('post', [
+      'id' => 'pk',
+      'title' => 'string',
+      'text' => 'text',
+  ]);
+
+
+
+  QUERY BUILDER 
+
+  $rows = (new \yii\db\Query())
+   ->select(['id', 'email'])
+   ->from('user')
+   ->where(['last_name' => 'Smith'])
+   ->limit(10)
+   ->all();
+
+
+  temos nosso select()
+    $query->select(['id', 'email']);
+
+    // equivalente a:
+
+    $query->select('id, email')
+
+    em subquery's temos.
+    $subQuery = (new Query())->select('COUNT(*)')->from('user');
+
+    // SELECT `id`, (SELECT COUNT(*) FROM `user`) AS `count` FROM `post`
+    $query = (new Query())->select(['id', 'count' => $subQuery])->from('post');
+
+
+    from()
+      // SELECT * FROM `user`
+      $query->from('user');
+
+    where()
+      $query->where('status=1');
+
+      // ou usar parâmetro para vincular os valores dinamicamente 
+      $query->where('status=:status', [':status' => $status]);
+
+    ----------
+    // Perigoso! NÃO faça isto a menos que você esteja muito certo que o $status deve ser um número inteiro.
+    $query->where("status=$status");
+
+    Ao usar parâmetro, você pode chamar params() ou addParams() para especificar os parâmetros separadamente.
+
+    $query->where('status=:status')
+      ->addParams([':status' => $status]);
+
+
+  Formato Hash
+    Formato HASH é mais usado para especificar múltiplos AND - sub-condições 
+    concatenadas, sendo cada uma afirmação simples de igualdade. 
+    É escrito como um array cujas chaves são nomes de coluna e os valores 
+    correspondem ao conteúdo destas colunas. Por exemplo:
+
+    // ...WHERE (`status` = 10) AND (`type` IS NULL) AND (`id` IN (4, 8, 15))
+    $query->where([
+      'status' => 10,
+      'type' => null,
+      'id' => [4, 8, 15],
+    ]);
+
+
+  Filtrar Condições
+  -Ao construir condições WHERE a partir de entradas de usuários finais, 
+    você geralmente deseja ignorar os valores vazios. 
+
+  // $username and $email são inputs dos usuário finais 
+  $query->filterWhere([
+    'username' => $username,
+    'email' => $email,
+  ]);
+
+
+  orderBy()
+  groupBy()
+  having()
+  limit() e offset()
+  join()
+  union()
+
+  MÉTODOS QUERY
+  all() - array de linhas, pares nome-valor
+  one() - retorna primeira linha do resultado
+  column() - primeira coluna do resultado
+  scalar() - retorna valor a escalar localizado na 1ºlinha e coluna do 1ºresultado.
+  exists() - retorna valor indica se a consulta contém qualquer resultado
+  count() - retorna a quantidade de resultados da query.
+
+
+  podemos mostrar o commando pra ver o que está sendo a query.
+  $command = (new \yii\db\Query())
+   ->select(['id', 'email'])
+   ->from('user')
+   ->where(['last_name' => 'Smith'])
+   ->limit(10)
+   ->createCommand();
+   
+  // mostra a instrução SQL 
+  echo $command->sql;
+
+  // Mostra os parâmetros que serão ligados
+  print_r($command->params);
+
+  // retorna todas as linhas do resultado da query
+  $rows = $command->queryAll();
+
+
+
+  temos o indexBy(), temos sintax com anonymousFunction
+
+  // retorna [100 => ['id' => 100, 'username' => '...', ...], 101 => [...], 103 => [...], ...]
+  $query = (new \yii\db\Query())
+    ->from('user')
+    ->limit(10)
+    ->indexBy('id')
+    ->all();
+
+
+  BATCH QUERY, com foreach.
+  use yii\db\Query;
+
+  $query = (new Query())
+    ->from('user')
+    ->orderBy('id');
+
+  foreach ($query->batch() as $users) {
+    // $users é um array de 100 ou menos linha da tabela user
+  }
+
+  // ou se você quiser fazer uma iteração da linha uma por uma
+  foreach ($query->each() as $user) {
+    // $user representa uma linha de dados a partir da tabela user
+  }
+
+
+
+  !!ACTIVE RECORD!!
+  como se fosse query também. construtor de consulta.
+  só que é feito por classe.
+
+  $customer = new Customer();
+  $customer->name = 'Qiang';
+  $customer->save();
+
+  tem support para os mesmos bancos citados acima.
+
+  -------------------
+  namespace app\models;
+
+  use yii\db\ActiveRecord;
+
+  class Customer extends ActiveRecord
+  {
+    const STATUS_INACTIVE = 0;
+    const STATUS_ACTIVE = 1;
+    
+    /**
+      * @return string the name of the table associated with this ActiveRecord class.
+      */
+    public static function tableName()
+    {
+        return 'customer';
+    }
+  }
+  -----------------------
+
+  a consulta de dados é parecida com a do query builder, mas temos que utilizar
+  a classe da active record.
+
+  // retorna um único customer cujo ID é 123
+  // SELECT * FROM `customer` WHERE `id` = 123
+  $customer = Customer::find()
+    ->where(['id' => 123])
+    ->one();
+
+  // retorna todos customers ativos e os ordena por seus IDs
+  // SELECT * FROM `customer` WHERE `status` = 1 ORDER BY `id`
+  $customers = Customer::find()
+    ->where(['status' => Customer::STATUS_ACTIVE])
+    ->orderBy('id')
+    ->all();
+
+  // retorna a quantidade de customers ativos
+  // SELECT COUNT(*) FROM `customer` WHERE `status` = 1
+  $count = Customer::find()
+    ->where(['status' => Customer::STATUS_ACTIVE])
+    ->count();
+
+  // retorna todos customers em um array indexado pelos seus IDs
+  // SELECT * FROM `customer`
+  $customers = Customer::find()
+    ->indexBy('id')
+    ->all();
+
+
+  -------------------------------
+  -findOne()
+  -findAll()
+
+
+  // retorna um único customer cujo ID é 123
+  // SELECT * FROM `customer` WHERE `id` = 123
+  $customer = Customer::findOne(123);
+
+  // retorna customers cujo ID é 100, 101, 123 or 124
+  // SELECT * FROM `customer` WHERE `id` IN (100, 101, 123, 124)
+  $customers = Customer::findAll([100, 101, 123, 124]);
+
+  // retorna um customer ativo cujo ID é 123
+  // SELECT * FROM `customer` WHERE `id` = 123 AND `status` = 1
+  $customer = Customer::findOne([
+    'id' => 123,
+    'status' => Customer::STATUS_ACTIVE,
+  ]);
+
+  // retorna todos os customers inativos
+  // SELECT * FROM `customer` WHERE `status` = 0
+  $customers = Customer::findAll([
+    'status' => Customer::STATUS_INACTIVE,
+  ]);
+
+----------------------------------------
+
+  TRANSFORMANDO DADOS
+    já que é uma classe podemos já retornar os dados limpos para usar na view
+    por exemplo a data que vem com formato americano.
+
+      class Customer extends ActiveRecord
+    {
+      // ...
+
+      public function getBirthdayText()
+      {
+          return date('Y/m/d', $this->birthday);
+      }
+      
+      public function setBirthdayText($value)
+      {
+          $this->birthday = strtotime($value);
+      }
+    }
+
+
+  podemos retornar em array, (json nao sei se pode direto, mas pra converter depois
+    para objeto)
+
+    // retorna todos os `customers`
+    // cada `customer` retornado é associado a um array
+    $customers = Customer::find()
+      ->asArray()
+      ->all();
+
+
+  para SALVAR DADOS quase a mesma coisa.
+
+  // insere uma nova linha de dados
+  $customer = new Customer();
+  $customer->name = 'James';
+  $customer->email = 'james@example.com';
+  $customer->save();
+
+  // atualiza uma linha de dados existente
+  $customer = Customer::findOne(123);
+  $customer->email = 'james@newexample.com';
+  $customer->save();
+
+  
 
   ==========================================
     # SEGURANÇA
