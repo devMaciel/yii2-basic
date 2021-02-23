@@ -408,7 +408,282 @@
 
   
 
-  MODULES
+  MODULES/FILTROS/
+      filtro é tipo aqueles comportamentos(behaviors) na parte de auth também.
+    contentNegotiator também filtras os dados, com se recebesse response em xml ou json.
+
+    use yii\filters\ContentNegotiator;
+    use yii\web\Response;
+
+    public function behaviors()
+    {
+        return [
+            [
+                'class' => ContentNegotiator::className(),
+                'formats' => [
+                    'application/json' => Response::FORMAT_JSON,
+                    'application/xml' => Response::FORMAT_XML,
+                ],
+                'languages' => [
+                    'en-US',
+                    'de',
+                ],
+            ],
+        ];
+    }
+
+    PageCache, temos cache de página tbm, e fica dentro dos behaviors
+    RateLimiter/VerbFilter
+
+    Cors(cross origin resource sharing) acesso vindo de outros sites,
+    podemos restringir acesso somente a um dominio, no caso o nosso tbm.
+
+
+    WIDGETS 
+      temos vários widgets, tipo uns plugins ou mini components, para usar na view
+      datepicker, os forms.
+
+    exemplo:
+   
+    namespace app\components;
+
+    use yii\base\Widget;
+    use yii\helpers\Html;
+
+    class HelloWidget extends Widget
+    {
+        public $message;
+
+        public function init()
+        {
+            parent::init();
+            if ($this->message === null) {
+                $this->message = 'Hello World';
+            }
+        }
+
+        public function run()
+        {
+            return Html::encode($this->message);
+        }
+    }
+    Para usar este widget, simplesmente insira o código a seguir em uma view (visão):
+
+    <?php
+    use app\components\HelloWidget;
+      ?>
+    <?= HelloWidget::widget(['message' => 'Good morning']) ?>
+
+    Aqui temos o exemplo com buffer
+    namespace app\components;
+
+    use yii\base\Widget;
+    use yii\helpers\Html;
+
+    class HelloWidget extends Widget
+    {
+        public function init()
+        {
+            parent::init();
+            ob_start();
+        }
+
+        public function run()
+        {
+            $content = ob_get_clean();
+            return Html::encode($content);
+        }
+    }
+
+    Como você pode ver, o buffer de saída do PHP é iniciado no método init() 
+    para que qualquer conteúdo entre as chamadas de init() e run() possam ser 
+    capturadas, processadas e retornadas em run().
+
+    widgets é mais pra reuso de código na view, deve seguir o padrão MVC
+    são autossuficientes e podem ser removidos da view sem fazer qualquer outra coisa.
+
+
+  ASSETS
+  Um asset no Yii é um arquivo que pode ser referenciado em uma página Web.
+  parecido com do laravel, assets que podemos pegar nossos scripts de css ou js
+
+  asset bundle, é uma coleção de assets, localizados em um diretório;
+  exemplo:
+
+  <?php
+
+  namespace app\assets;
+
+  use yii\web\AssetBundle;
+
+  class AppAsset extends AssetBundle
+  {
+      public $basePath = '@webroot';
+      public $baseUrl = '@web';
+      public $css = [
+          'css/site.css',
+      ];
+      public $js = [
+      ];
+      public $depends = [
+          'yii\web\YiiAsset',
+          'yii\bootstrap\BootstrapAsset',
+      ];
+  }
+
+  então temos todas aquelas coisas, de asset js/css. e outras coisas.
+  -sourcePath
+  -basePath
+  -baseUrl-js-css-depends-jsOptions
+  -cssOptions
+  -publishOptions
+
+  Observação: Não use o @webroot/assets como o caminho da fonte. 
+  Este diretório é usado por padrão pelo gerenciador de asset para 
+  salvar os arquivos de asset publicados a partir de seu local de origem. 
+  Qualquer conteúdo deste diretório será considerado como temporário e podem 
+  estar sujeitos a serem deletados.
+
+  <?php
+  namespace app\assets;
+
+  use yii\web\AssetBundle;
+
+  class FontAwesomeAsset extends AssetBundle 
+  {
+      public $sourcePath = '@bower/font-awesome'; 
+      public $css = [ 
+          'css/font-awesome.min.css', 
+      ]; 
+      
+      public function init()
+      {
+          parent::init();
+          $this->publishOptions['beforeCopy'] = function ($from, $to) {
+              $dirname = basename(dirname($from));
+              return $dirname === 'fonts' || $dirname === 'css';
+          };
+      }
+  }  
+  O exemplo anterior define um asset bundle para o pacode de "fontawesome". 
+  Ao especificar a opção de publicação beforeCopy, apenas os subdiretórios 
+  fonts e css serão publicados.
+
+  Assets do BOWER E NPM, pacotes js são gerenciados pelo Bower e NPM.
+
+  temos o Cache Busting, que deixa os assets em cache, porém é preciso configurar
+  também um timestamp para ele poder procurar o asset mais recente, caso adicione mais
+  coisa depois no ambiente de produção
+
+    return [
+      // ...
+      'components' => [
+          'assetManager' => [
+              'appendTimestamp' => true,
+          ],
+      ],
+  ];
+
+  dai temos até conversões de assets, mais configs etc. que podemso utilizar
+  less/scss/stylus/coffeescript/typescript
+
+  podemos e devemos combinar/comprimir nossos assets, para evitar muitas requisições http
+
+  Localize todos os asset bundles em sua aplicação que você deseja combinar e comprimir.
+
+  Divida estes bundles em um ou alguns grupos. Observe que cada bundle pode apenas 
+  pertencer a um único grupo.
+
+  Combinar/Comprimir os arquivos CSS de cada grupo em um único arquivo. 
+
+  Faça isto de forma semelhante para os arquivos JavaScript.
+
+  Defina um novo asset bundle para cada grupo:
+  Defina as propriedade css e js com os arquivos CSS e JavaScript combinados, 
+  respectivamente.
+
+  Personalize os asset bundles de cada grupo definindo as suas propriedades 
+  css e js como vazias e definindo a sua propriedade depends para ser o 
+  novo asset bundle criado para o grupo.
+
+  podemos fazer isto com as ferramentas, (CLOSURE COMPILER, YUI COMPRESSOR)
+
+  da pra agrupar assset bundles também, como allshared/allfrontend/allbackend
+
+  EXTENSÕES 
+    tipo nossas dependencies, nos arquivos json, que pegamos com composer mesmo.
+    composer.json q temos todo objeto com varios negocios, dependencias, até TAGS
+    {
+        // nome do pacote
+        "name": "yiisoft/yii2-imagine",
+
+        // tipo de pacote
+        "type": "yii2-extension",
+
+        "description": "The Imagine integration for the Yii framework",
+        "keywords": ["yii2", "imagine", "image", "helper"],
+        "license": "BSD-3-Clause",
+        "support": {
+            "issues": "https://github.com/yiisoft/yii2/issues?labels=ext%3Aimagine",
+            "forum": "http://www.yiiframework.com/forum/",
+            "wiki": "http://www.yiiframework.com/wiki/",
+            "irc": "irc://irc.freenode.net/yii",
+            "source": "https://github.com/yiisoft/yii2"
+        },
+        "authors": [
+            {
+                "name": "Antonio Ramirez",
+                "email": "amigo.cobos@gmail.com"
+            }
+        ],
+
+        // dependências do pacote
+        "require": {
+            "yiisoft/yii2": "~2.0.0",
+            "imagine/imagine": "v0.5.0"
+        },
+
+        // especifica as classes autoloading 
+        "autoload": {
+            "psr-4": {
+                "yii\\imagine\\": ""
+            }
+        }
+    }
+
+
+    namespace deve ser nomeado seguindo o padrão psr-4 ou psr-0
+    não pode utilizar 'yii,yii2,yiisoft' como nome do vendor, pq são palavras 
+    reservadas do codigo nativo do yii.
+    
+
+    existem extensoes nativas também, que estão no packagist.
+    https://www.yiiframework.com/doc/guide/2.0/pt-br/structure-extensions
+    
+    apidoc - gerar api de doc do framework
+    authclient - auth de clientes, contas etc
+    bootstrap - widgets que encapsulam os components e plugins
+    codeception - suporte a testes
+    debug - debug o yii
+    elasticsearch - consultas/pesquisas básicas, implementa tbm o active record.
+    faker - dados falsos para gerar pra testar ou sei lá
+    gii - gerador de código, que já vimos
+    httpclient - httpclient v;
+    imagine - funcoes de manipulação de imagens
+    jui - conjunto de widgets
+    mongodb - suporte pra uso do db mongodb
+    redis - suporte para uso do redis, consulta basica, activerecord,cache..
+    smarty - motor de template-
+    sphinx - suporte pra uso do sphinx, mesma coisa de cima praticamente
+    swiftmailer - fornece recursos para envio de emails
+    twig- motor de template tbm.
+
+
+  ==========================================
+    # TRATANDO REQUISIÇÕES  
+
+    
+
 
   ==========================================
     # SEGURANÇA
