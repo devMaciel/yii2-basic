@@ -1261,6 +1261,417 @@
     # CONCEITOS CHAVES 
       
       Componentes
+      -propriedades
+      -eventos
+      -behaviors(comportamento)
+
+      ja vimos lá no getting started
+      <?php
+
+        namespace yii\components\MyClass;
+
+        use yii\base\BaseObject;
+
+        class MyClass extends BaseObject
+        {
+          public $prop1;
+          public $prop2;
+
+          public function __construct($param1, $param2, $config = [])
+          {
+              // ... initialization before configuration is applied
+
+              parent::__construct($config);
+          }
+
+          public function init()
+          {
+              parent::init();
+
+              // ... initialization after configuration is applied
+          }
+        }
+
+      configurando o component
+      $component = new MyClass(1, 2, ['prop1' => 3, 'prop2' => 4]);
+      // alternatively
+      $component = \Yii::createObject([
+        'class' => MyClass::className(),
+        'prop1' => 3,
+        'prop2' => 4,
+      ], [1, 2]);
+
+
+    PROPRIEDADES 
+
+    temos os métodos getter and setter  
+    namespace app\components;
+
+      use yii\base\BaseObject;
+
+      class Foo extends BaseObject
+      {
+          private $_label;
+
+          public function getLabel()
+          {
+              return $this->_label;
+          }
+
+          public function setLabel($value)
+          {
+              $this->_label = trim($value);
+          }
+      }
+
+
+    tem até uns atalhos.
+
+    // equivalent to $label = $object->getLabel();
+    $label = $object->label;
+
+    // equivalent to $object->setLabel('abc');
+    $object->label = 'abc';
+
+  tem uma parada com trim() que fazendo aqueles bang ali não precisa chamar na maioria
+  das calls.
+
+  
+  EVENTOS
+  -permitem que você injete código personalizado dentro de outro código existente em 
+  determinado pontos de execução
+
+  function ($event) {
+   // $event is an object of yii\base\Event or a child class
+  }
+
+  $event tem:
+  -nome do evento
+  -objeto chamador
+  -dados personalizados
+
+  adicionando manipuladores de evento
+  $foo = new Foo;
+
+  // esse manipulador é uma função global
+  $foo->on(Foo::EVENT_HELLO, 'function_name');
+
+  // esse manipulador é um método de objeto
+  $foo->on(Foo::EVENT_HELLO, [$object, 'methodName']);
+
+  // esse manipulador é um método estático da classe
+  $foo->on(Foo::EVENT_HELLO, ['app\components\Bar', 'methodName']);
+
+  // esse manipulador é uma função anônima
+  $foo->on(Foo::EVENT_HELLO, function ($event) {
+    // Código ...
+  });
+
+
+  --------------------------------------------
+  // O código a seguir mostrará "abc" quando o evento for disparado
+  // porque $event->data contêm os dados passados no terceiro parâmetro do "on"
+  $foo->on(Foo::EVENT_HELLO, 'function_name', 'abc');
+
+  function function_name($event) {
+    echo $event->data;
+  }
+
+
+  Disparando eventos:
+  namespace app\components;
+
+  use yii\base\Component;
+  use yii\base\Event;
+
+  class Foo extends Component
+  {
+    const EVENT_HELLO = 'hello';
+
+    public function bar()
+    {
+        $this->trigger(self::EVENT_HELLO);
+    }
+  }
+  Com o código acima, todas as chamadas para bar () irão disparar um evento 
+  chamado hello.
+
+
+  outro exemplo com evento..
+  namespace app\components;
+
+  use yii\base\Component;
+  use yii\base\Event;
+
+  class MessageEvent extends Event
+  {
+    public $message;
+  }
+
+  class Mailer extends Component
+  {
+    const EVENT_MESSAGE_SENT = 'messageSent';
+
+    public function send($message)
+    {
+        // ...sending $message...
+
+        $event = new MessageEvent;
+        $event->message = $message;
+        $this->trigger(self::EVENT_MESSAGE_SENT, $event);
+    }
+  }
+
+  trigger(), chama todos os manipuladores ligados ao evento passado.
+
+
+  para desvincular manipuladores de eventos.
+
+    // o manipulador é uma função global
+  $foo->off(Foo::EVENT_HELLO, 'function_name');
+
+  // o manipulador é um método de objeto
+  $foo->off(Foo::EVENT_HELLO, [$object, 'methodName']);
+
+  // o manipulador é um método de estático da Classe
+  $foo->off(Foo::EVENT_HELLO, ['app\components\Bar', 'methodName']);
+
+  // o manipulador é uma função anônima
+  $foo->off(Foo::EVENT_HELLO, $anonymousFunction);
+
+
+  ou desvincula todos manipuladores do evento mesmo.
+  $foo->off(Foo::EVENT_HELLO);
+
+  
+  
+  --podemos chamar eventos a níveis de classe também.
+  use yii\base\Event;
+
+  Event::on(Foo::className(), Foo::EVENT_HELLO, function ($event) {
+    var_dump($event->sender);  // displays "null"
+  });
+
+  Event::trigger(Foo::className(), Foo::EVENT_HELLO);
+
+  --para desvincular o evento.
+  // desvincula $handler
+  Event::off(Foo::className(), Foo::EVENT_HELLO, $handler);
+
+  // Desvincula todos os manipuladores de Foo::EVENT_HELLO
+  Event::off(Foo::className(), Foo::EVENT_HELLO);
+
+
+  Eventos Globais existem, podemos chamar para todo APP
+  use Yii;
+  use yii\base\Event;
+  use app\components\Foo;
+
+  Yii::$app->on('bar', function ($event) {
+    echo get_class($event->sender);  // Mostra na tela "app\components\Foo"
+  });
+
+  Yii::$app->trigger('bar', new Event(['sender' => new Foo]));
+
+
+
+  BEHAVIORS 
+
+
+  namespace app\components;
+
+  use yii\base\Behavior;
+
+  class MyBehavior extends Behavior
+  {
+    public $prop1;
+
+    private $_prop2;
+
+    public function getProp2()
+    {
+        return $this->_prop2;
+    }
+
+    public function setProp2($value)
+    {
+        $this->_prop2 = $value;
+    }
+
+    public function foo()
+    {
+        // ...
+    }
+  }
+
+
+  temos propriedades como variáveis, e comportamento diferentes
+  parecido com getter/setter
+
+
+  aqui um exemplo de como colocar behavior no codigo
+  public function behaviors()
+   {
+       return [
+           // behavior anônimo, somente o nome da classe
+           MyBehavior::className(),
+
+           // behavior nomeado, somente o nome da classe
+           'myBehavior2' => MyBehavior::className(),
+
+           // behavior anônimo, array de configuração
+           [
+               'class' => MyBehavior::className(),
+               'prop1' => 'value1',
+               'prop2' => 'value2',
+           ],
+
+           // behavior nomeado, array de configuração
+           'myBehavior4' => [
+               'class' => MyBehavior::className(),
+               'prop1' => 'value1',
+               'prop2' => 'value2',
+           ]
+       ];
+
+    
+    podemos também colocar vários behaviors, com attach.
+    $component->attachBehaviors([
+    'myBehavior1' => new MyBehavior,  // um behavior nomeado
+      MyBehavior::className(),          // um behavior anônimo 
+    ]);
+
+
+
+    então podemos utilizar behavior parecido com components, behavior vai ta nas propriedades
+    do component e chamamos ele
+
+      // "prop1" é uma propriedade definida na classe behavior 
+    echo $component->prop1;
+    $component->prop1 = $value;
+
+    podemos desvincular behaviors. single ou all
+    temos o timestampBehavior, praticamente timestamp.
+
+    Behavior vs Traits
+    behavior se comporta como classe, são comfiguráveis
+    traits são mais eficiente q behavior, porém requerem mais tempo e memoria.
+
+
+
+    CONFIGURAÇÕES   
+
+      aqui temos varias configurações, por exemplo do banco de dados, dsn etc.
+      e temos muitos outros tipos de config. no caso do template basic.
+
+
+    temos a configuração de widget
+    use yii\widgets\Menu;
+
+    echo Menu::widget([
+        'activateItems' => false,
+        'items' => [
+            ['label' => 'Home', 'url' => ['site/index']],
+            ['label' => 'Products', 'url' => ['product/index']],
+            ['label' => 'Login', 'url' => ['site/login'], 'visible' => Yii::$app->user->isGuest],
+        ],
+    ]);
+
+    que no caso podemos colocar na view.
+
+    os arquivos de configuração estão em web.php
+    assim como as constantes de ambiente.
+
+
+    ALIASES (apelidos)
+    --apelidos dos caminhos geralmente
+
+      // um alias de um caminho de arquivo
+    Yii::setAlias('@foo', '/caminho/para/foo');
+
+    // um alias de uma URL
+    Yii::setAlias('@bar', 'http://www.exemplo.com.br');
+
+
+  Você pode definir um alias usando outro alias (tanto raiz quanto derivado):
+
+  Yii::setAlias('@foobar', '@foo/bar');
+  -------------------
+
+  também podemos recuperar com get
+    Yii::getAlias('@foo/test/arquivo.php');  // exibe: /caminho/para/foo/test/arquivo.php
+    Yii::getAlias('@foo/bar/arquivo.php');   // exibe: /caminho2/bar/arquivo.php
+
+  existem alias já predefinidos
+  -@yii
+  -@app
+  -@runtime
+  -@webroot
+  -@web
+  -@vendor
+  -@bower
+  -@npm 
+
+
+  um alias e automaticamente criado quando instalamos uma extensão.
+  exemplo de como fica..
+
+  Yii::setAlias('@yii/jui', 'VendorPath/yiisoft/yii2-jui');
+
+
+
+
+  AUTOLOADING DE CLASSES  
+  -ele é feito no arquivo yii.php, automaticamente;
+  utiliza o autoloader do composer.
+
+
+  SERVICE LOCATOR
+  -Um service locator é um objeto que sabe como fornecer todos os tipos de serviços 
+  (ou componentes) que uma aplicação pode precisar.
+
+  aqui mais ou menos como funciona na classe, e depois chamando a classe.
+  class SolrServiceBuilder
+  {
+      public static function build($ip)
+      {
+          return function () use ($ip) {
+              $solr = new app\components\SolrService($ip);
+              // ... outras inicializações ...
+              return $solr;
+          };
+      }
+  }
+
+  return [
+      // ...
+      'components' => [
+          // ...
+          'search' => SolrServiceBuilder::build('127.0.0.1'),
+      ],
+  ];
+
+
+  CONTAINER DE INJEÇÃO DE DEPENDÊNCIA 
+  - é um objeto que sabe como instanciar e configurar objetos 
+    e todas as suas dependências
+
+   yii\di\Container
+   -injeção de construtor
+   -injeção de setter e propriedade
+   -injeção de php callable
+
+  mais sobre DI 
+    https://www.yiiframework.com/doc/guide/2.0/pt-br/concept-di-container
+
+  
+  ==========================================
+    # TRABALHANDO COM BANCO DE DADOS 
+
+
+
+
+
 
   ==========================================
     # SEGURANÇA
