@@ -2500,11 +2500,682 @@
   ==========================================
     # COLETANDO DADOS DE USUARIOS
 
+    Active Record based forms.
+    aqui criamos um model
+
+    <?php
+
+    class LoginForm extends \yii\base\Model
+    {
+        public $username;
+        public $password;
+
+        public function rules()
+        {
+            return [
+                // define validation rules here
+            ];
+        }
+    }
 
 
+    já temos exemlo no loginForm e SiteController, e outros tipos para criar forms
+    
+    // a password input
+    <?= $form->field($model, 'password')->passwordInput() ?>
+    // adding a hint and a customized label
+    <?= $form->field($model, 'username')->textInput()->hint('Please enter your name')->label('Name') ?>
+    // creating a HTML5 email input element
+    <?= $form->field($model, 'email')->input('email') ?>
+
+    // allow multiple files to be uploaded:
+    echo $form->field($model, 'uploadFile[]')->fileInput(['multiple'=>'multiple']);
+
+    // allow multiple items to be checked:
+    echo $form->field($model, 'items[]')->checkboxList(['a' => 'Item A', 'b' => 'Item B', 'c' => 'Item C']);
 
 
+    Criando Listas.
+    -Dropdown list
+    -Radio lists
+    -Checkbox lists
+
+      $items = [
+        1 => 'item 1', 
+        2 => 'item 2'
+      ] 
+
+      $items = Category::find()
+          ->select(['label'])
+          ->indexBy('id')
+          ->column();
+
+    temos dropdowns
+    /* @var $form yii\widgets\ActiveForm */
+
+    echo $form->field($model, 'category')->dropdownList([
+            1 => 'item 1', 
+            2 => 'item 2'
+        ],
+        ['prompt'=>'Select Category']
+    );
+
+    --radiolist
+    /* @var $form yii\widgets\ActiveForm */
+
+    echo $form->field($model, 'category')->radioList([
+        1 => 'radio 1', 
+        2 => 'radio 2'
+    ]);
+
+    --checkboxList
+    /* @var $form yii\widgets\ActiveForm */
+
+    echo $form->field($model, 'category')->checkboxList([
+        1 => 'checkbox 1', 
+        2 => 'checkbox 2'
+    ]);
+
+
+    PJAX é tipo ajax, so que com forms, envia o form e retorna já a resposta sem
+    dar o refresh na página.
+
+    use yii\widgets\Pjax;
+    use yii\widgets\ActiveForm;
+
+    Pjax::begin([
+        // Pjax options
+    ]);
+        $form = ActiveForm::begin([
+            'options' => ['data' => ['pjax' => true]],
+            // more ActiveForm options
+        ]);
+
+            // ActiveForm content
+
+        ActiveForm::end();
+    Pjax::end();
+
+    Tip: Be careful with the links inside the Pjax widget since the 
+    response will also be rendered inside the widget. To prevent this, 
+    use the data-pjax="0" HTML attribute.
+
+
+    VALIDANDO DADOS
+
+    validamos input principalmente pelo model, com validate()
+    $model = new \app\models\ContactForm();
+
+    // populate model attributes with user inputs
+    $model->load(\Yii::$app->request->post());
+    // which is equivalent to the following:
+    // $model->attributes = \Yii::$app->request->post('ContactForm');
+
+    if ($model->validate()) {
+        // all inputs are valid
+    } else {
+        // validation failed: $errors is an array containing error messages
+        $errors = $model->errors;
+    }
+
+    junto com rules()
+    public function rules()
+    {
+        return [
+            // the name, email, subject and body attributes are required
+            [['name', 'email', 'subject', 'body'], 'required'],
+
+            // the email attribute should be a valid email address
+            ['email', 'email'],
+        ];
+    }
+
+
+    e essas rules vão retornra um 'array of rules'. formato de array.
+
+    CUSTOMIZING ERROR MESSAGES
  
+      dentro do array de rules temos um array->array, com key=>value
+      ['message'=>'custom_message']
+
+      public function rules()
+      {
+          return [
+              ['username', 'required', 'message' => 'Please choose a username.'],
+          ];
+      }
+
+
+      para quase tudo no framework temos eventos, validation também tem eventos.
+      -beforeValidate()
+      -afterValidate()
+      como se fosse o life cicle mesmo.
+
+      CONDITIONAL VALIDATON
+        também temos dentro da validate() esta opção caso usemos.
+        ['state', 'required', 'when' => function($model) {
+            return $model->country == 'USA';
+        }]
+
+      podemos utilizar o trim()[tira os espaços brancos do input]
+      dentro do validate, default() nao tenho certeza se vem com espaço em branco.
+
+        return [
+            [['username', 'email'], 'trim'],
+            [['username', 'email'], 'default'],
+        ];
+
+
+      ----------------------------------------
+      Aqui temos mais uma regrinha de validação
+        ['age', 'trim'],
+        ['age', 'default', 'value' => null],
+        ['age', 'integer', 'min' => 0],
+        ['age', 'filter', 'filter' => 'intval', 'skipOnEmpty' => true],
+
+      empty inputs, preisam ser null para entra na database, caso precise ter o valor
+      depois,
+      skipOnEmpty, não vai colocar nada se o valor for vazio.
+
+      ---------------------------------------
+      HANDLING EMPTY INPUTS 
+
+      por default, é uma emptystring, ou empty array ou null.
+
+        return [
+            // set "username" and "email" as null if they are empty
+            [['username', 'email'], 'default'],
+
+            // set "level" to be 1 if it is empty
+            ['level', 'default', 'value' => 1],
+        ];
+    ------------------------------------------------------------------------
+         ['agree', 'required', 'isEmpty' => function ($value) {
+            return empty($value);
+         }]
+
+      podemos também nas validate, colocar um default value caso seja vazio. no caso
+      em cima.
+
+    ---------------
+
+    AD HOC validation
+      quando não temos a validação no model, podemos utilizar algumas já prontas
+      no caso o do emailValidator()
+
+      $email = 'test@example.com';
+      $validator = new yii\validators\EmailValidator();
+
+      if ($validator->validate($email, $error)) {
+          echo 'Email is valid.';
+      } else {
+          echo $error;
+      }
+      
+    -------------------------------
+
+
+    Multiple Validations against several values.
+    utilizamos o DynamicModel::
+      public function actionSearch($name, $email)
+      {
+          $model = DynamicModel::validateData(['name' => $name, 'email' => $email], [
+              [['name', 'email'], 'string', 'max' => 128],
+              ['email', 'email'],
+          ]);
+
+          if ($model->hasErrors()) {
+              // validation fails
+          } else {
+              // validation succeeds
+          }
+      }
+
+      Dynamic model é possivel criar rules/validation como classe,
+      por exemplo em um método da classe.
+
+      public function actionSearch($name, $email)
+      {
+          $model = new DynamicModel(['name' => $name, 'email' => $email]);
+          $model->addRule(['name', 'email'], 'string', ['max' => 128])
+              ->addRule('email', 'email')
+              ->validate();
+
+          if ($model->hasErrors()) {
+              // validation fails
+          } else {
+              // validation succeeds
+          }
+      }
+
+
+  ---------------------------------------
+  existem também INLINE-validator, caso colocamos mais condições na rules..
+  STANDALONE sobreescreve a validação, com alguma condição, parecido com inline.
+  utilizamos o addError() também.
+
+
+  aqui temos exemplo validando sem pegar do model, praticamente cria as variáveis
+  dentro da própria classe e utiliza elas.
+  -----------------------------------------
+  namespace app\models;
+
+    use Yii;
+    use yii\base\Model;
+    use app\components\validators\CountryValidator;
+
+    class EntryForm extends Model
+    {
+        public $name;
+        public $email;
+        public $country;
+
+        public function rules()
+        {
+            return [
+                [['name', 'email'], 'required'],
+                ['country', CountryValidator::className()],
+                ['email', 'email'],
+            ];
+        }
+    }
+  -----------------------------------------
+
+  MULTIPLE ATTRIBUTES..
+    no caso temos constantes na classe e utilizamos elas dentro do validator.
+    -----------------------------------------
+    class MigrationForm extends \yii\base\Model
+    {
+        /**
+        * Minimal funds amount for one adult person
+        */
+        const MIN_ADULT_FUNDS = 3000;
+        /**
+        * Minimal funds amount for one child
+        */
+        const MIN_CHILD_FUNDS = 1500;
+
+        public $personalSalary;
+        public $spouseSalary;
+        public $childrenCount;
+        public $description;
+
+        public function rules()
+        {
+            return [
+                [['personalSalary', 'description'], 'required'],
+                [['personalSalary', 'spouseSalary'], 'integer', 'min' => self::MIN_ADULT_FUNDS],
+                ['childrenCount', 'integer', 'min' => 0, 'max' => 5],
+                [['spouseSalary', 'childrenCount'], 'default', 'value' => 0],
+                ['description', 'string'],
+            ];
+        }
+    }
+    -----------------------------------------
+
+
+    Podemos CRIAR nosso próprio validator. um pouco complexo.
+    doc: https://www.yiiframework.com/doc/guide/2.0/pt-br/input-validation
+
+    ---------------------
+
+    Com a funcionalidade do addError() podemos colocar erros de validação
+    para várias variáveis em comum. exemplo:
+
+    Nesse caso, simplesmente adicionamos a validação naquela variável. no caso
+      poderia vir de um formulário ou coisa parecida.
+        $this->addError('childrenCount', 'Your salary is not enough for children.');
+
+    Podemos fazer desta forma também, para múltiplos campos/vars.
+        $message = 'Your salary is not enough for children.';
+        $this->addError('personalSalary', $message);
+        $this->addError('wifeSalary', $message);
+        $this->addError('childrenCount', $message);
+
+    Ou quando existem muitas variáveis, é melhor fazer isto dentro do laço de repetição.
+        $attributes = ['personalSalary', 'wifeSalary', 'childrenCount'];
+        foreach ($attributes as $attribute) {
+            $this->addError($attribute, 'Your salary is not enough for children.');
+        }
+
+    Também funciona o all(*), adiciona esse erro pra todos campos.
+      $this->addError('*', 'Your salary is not enough for children.');
+
+
+    fazendo deste jeito, os forms na VIEW ficam mais enxutos.
+      <?= $form->errorSummary($model) ?>
+
+
+
+
+    CLIENT-SIDE VALIDATION  
+      são feito pelo model RULES() no backend.
+      do frontend temos o validate() para os campos do formulários.
+
+      aqui o exemplo de rules client-side.
+      --------------------------------------------------
+        namespace app\models;
+
+        use yii\base\Model;
+        use app\models\User;
+
+        class LoginForm extends Model
+        {
+            public $username;
+            public $password;
+
+            public function rules()
+            {
+                return [
+                    // username and password are both required
+                    [['username', 'password'], 'required'],
+
+                    // password is validated by validatePassword()
+                    ['password', 'validatePassword'],
+                ];
+            }
+
+            public function validatePassword()
+            {
+                $user = User::findByUsername($this->username);
+
+                if (!$user || !$user->validatePassword($this->password)) {
+                    $this->addError('password', 'Incorrect username or password.');
+                }
+            }
+        }
+      --------------------------------------------------
+
+
+      Temos Client-Side Validation, com validator também.
+      outra coisa mais complexa que não entendi porque utilizar validator no backend.
+      mas caso precise, está na documentação.
+       https://www.yiiframework.com/doc/guide/2.0/pt-br/input-validation
+
+      --------------------------------------------------
+
+
+      DEFERRED VALIDATION
+        com async (ajax validation) mais complexo também, tem na doc.
+      
+      AJAX Validation
+        para isto é preciso dar um enable, porque já é setado como false.
+        podemos fazer para um form ou para todos.
+
+      -form específico
+      ---------------------------------
+      use yii\widgets\ActiveForm;
+
+      $form = ActiveForm::begin([
+          'id' => 'registration-form',
+      ]);
+
+      echo $form->field($model, 'username', ['enableAjaxValidation' => true]);
+
+      // ...
+
+      ActiveForm::end();
+      ---------------------------------
+
+      -all forms
+      ---------------------------------
+      $form = ActiveForm::begin([
+          'id' => 'contact-form',
+          'enableAjaxValidation' => true,
+      ]);
+    
+
+  RECEBENDO ARQUIVOS(UPLOAD)
+    já vimos acima lago parecido no formulário.
+    depois de feitas as rules pleo model, podemos ter a function de upload()
+    caso exista um upload, vai criar na root folder a pasta de uploads.
+    exemplo do código:
+
+    --------------------------------------
+    namespace app\models;
+
+    use yii\base\Model;
+    use yii\web\UploadedFile;
+
+    class UploadForm extends Model
+    {
+        /**
+        * @var UploadedFile
+        */
+        public $imageFile;
+
+        public function rules()
+        {
+            return [
+                [['imageFile'], 'file', 'skipOnEmpty' => false, 'extensions' => 'png, jpg'],
+            ];
+        }
+        
+        public function upload()
+        {
+            if ($this->validate()) {
+                $this->imageFile->saveAs('uploads/' . $this->imageFile->baseName . '.' . $this->imageFile->extension);
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }    
+
+    --------------------------------------
+
+    temos o fileValidator
+    https://www.yiiframework.com/doc/api/2.0/yii-validators-filevalidator
+
+    ------------------------------------
+
+    Na VIEW temos este formulário feito por widgets com active form
+    <?php
+      use yii\widgets\ActiveForm;
+      ?>
+
+      <?php $form = ActiveForm::begin(['options' => ['enctype' => 'multipart/form-data']]) ?>
+
+          <?= $form->field($model, 'imageFile')->fileInput() ?>
+
+          <button>Submit</button>
+
+      <?php ActiveForm::end() ?>
+
+    --------------------------------------------
+
+    Já no controller temos isto aqui.
+
+    namespace app\controllers;
+
+    use Yii;
+    use yii\web\Controller;
+    use app\models\UploadForm;
+    use yii\web\UploadedFile;
+
+    class SiteController extends Controller
+    {
+        public function actionUpload()
+        {
+            $model = new UploadForm();
+
+            if (Yii::$app->request->isPost) {
+                $model->imageFile = UploadedFile::getInstance($model, 'imageFile');
+                if ($model->upload()) {
+                    // file is uploaded successfully
+                    return;
+                }
+            }
+
+            return $this->render('upload', ['model' => $model]);
+        }
+    }
+
+  ---------------------------------------------
+
+  pegamos do model no controller o form de upload.
+
+  Para fazer multiple uploads é um pocuo diferente, temos ainda as mesmas rules.
+  porém no upload, temos que validar, e salvamos as files dentro do loop foreach. 
+  segue em seguinte.
+
+  ------------------------
+  namespace app\models;
+
+  use yii\base\Model;
+  use yii\web\UploadedFile;
+
+  class UploadForm extends Model
+  {
+      /**
+      * @var UploadedFile[]
+      */
+      public $imageFiles;
+
+      public function rules()
+      {
+          return [
+              [['imageFiles'], 'file', 'skipOnEmpty' => false, 'extensions' => 'png, jpg', 'maxFiles' => 4],
+          ];
+      }
+      
+      public function upload()
+      {
+          if ($this->validate()) { 
+              foreach ($this->imageFiles as $file) {
+                  $file->saveAs('uploads/' . $file->baseName . '.' . $file->extension);
+              }
+              return true;
+          } else {
+              return false;
+          }
+      }
+    }
+
+  --------------------------------------------------
+  
+  na VIEW, precisamos colocar a opção para multiple files, no file input.
+  vai salvar como array, fileInput->multiple, e imagesFIles[] como array.
+  praticamente isto.
+
+  ----------------------------
+  <?php
+    use yii\widgets\ActiveForm;
+    ?>
+
+    <?php $form = ActiveForm::begin(['options' => ['enctype' => 'multipart/form-data']]) ?>
+
+        <?= $form->field($model, 'imageFiles[]')->fileInput(['multiple' => true, 'accept' => 'image/*']) ?>
+
+        <button>Submit</button>
+
+  <?php ActiveForm::end() ?>
+  ----------------------------
+
+  Agora no controller , muda o getInstace, para getInstances. na uploadFile
+  e o UploadForm é imagesFiles, que armazena todas files.
+
+  -----------------------------------------
+  namespace app\controllers;
+
+    use Yii;
+    use yii\web\Controller;
+    use app\models\UploadForm;
+    use yii\web\UploadedFile;
+
+    class SiteController extends Controller
+    {
+        public function actionUpload()
+        {
+            $model = new UploadForm();
+
+            if (Yii::$app->request->isPost) {
+                $model->imageFiles = UploadedFile::getInstances($model, 'imageFiles');
+                if ($model->upload()) {
+                    // file is uploaded successfully
+                    return;
+                }
+            }
+
+            return $this->render('upload', ['model' => $model]);
+        }
+    }
+
+  ---------------------------------------
+
+  COLLECTING TABULAR INPUT
+    isso acontece quando temos multiplos models do mesmo tipo, em um único formulário.
+    geralmente é feito isso com settings dentro do banco de dados.
+    https://www.yiiframework.com/doc/guide/2.0/pt-br/input-tabular-input
+
+  ------------------------------------------
+
+  GETTING DATA FOR MULTIPLE MODELS
+    Aqui também, quando temos multiplos models com informações complexas
+    de outros banco de dados e não somente o mesmo. Docs
+    https://www.yiiframework.com/doc/guide/2.0/pt-br/input-multiple-models
+
+  ------------------------------------------
+
+  EXTENDING ACTIVEFORM ON THE CLIENT SIDE
+    aqui podemos utilizar dos EVENTS no active form. no caso, verificação de mensagem
+    se desejos realmente enviar os dados, confirmação de envio etc.
+
+    $('#contact-form').on('beforeSubmit', function (e) {
+      if (!confirm("Everything is correct. Submit?")) {
+        return false;
+      }
+      return true;
+    });
+
+    aqui parece um código jquery, antes de enviar o formulário, confirmamos com uma
+    mensagem se tudo está correto, se for, avança ou cancela a ação.
+
+
+    Então temos a explicação do life cicle, com
+    doc(https://www.yiiframework.com/doc/guide/2.0/pt-br/input-form-javascript)
+    -beforeValidate
+    -afterValidate
+    -beforeValidateAttribute
+    -afterValidateAttribute
+    -beforeSubmit
+    -ajaxBeforeSend
+    -ajaxComplete(quando completa a req ajax)
+
+    
+    que é parecido com os eventos de segurança de autenticação.
+
+    aqui temos um form ajax padrão normal
+    -------------------------------------------
+    var $form = $('#formId');
+    $form.on('beforeSubmit', function() {
+        var data = $form.serialize();
+        $.ajax({
+            url: $form.attr('action'),
+            type: 'POST',
+            data: data,
+            success: function (data) {
+                // Implement successful
+            },
+            error: function(jqXHR, errMsg) {
+                alert(errMsg);
+            }
+        });
+        return false; // prevent default submit
+    });
+    -------------------------------------------
+
+    temos como adicionar dinamicamente também, não entendi mt bem.
+    https://www.yiiframework.com/doc/guide/2.0/pt-br/input-form-javascripts
+    
+
+  ==========================================
+    # EXIBINDO DADOS
+
+    
+
+
+
   ==========================================
     # SEGURANÇA
 
