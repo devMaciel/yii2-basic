@@ -3172,7 +3172,436 @@
   ==========================================
     # EXIBINDO DADOS
 
-    
+    FORMATAÇÃO DE DADOS
+      usamos para algumas coisas, alguns exemplos abaixo.
+
+      $formatter = \Yii::$app->formatter;
+
+      // output: January 1, 2014
+      echo $formatter->asDate('2014-01-01', 'long');
+      
+      // output: 12.50%
+      echo $formatter->asPercent(0.125, 2);
+      
+      // output: <a href="mailto:cebe@example.com">cebe@example.com</a>
+      echo $formatter->asEmail('cebe@example.com'); 
+
+      // output: Yes
+      echo $formatter->asBoolean(true); 
+      // it also handles display of null values:
+
+      // output: (not set)
+      echo $formatter->asDate(null); 
+
+
+      podemos configurar diretamente no component o 'formatter' e especificar como 
+      deverá retornar sempre, ao invés de repetir toda vez a função do formater na view.
+
+      return [
+          'components' => [
+              'formatter' => [
+                  'dateFormat' => 'dd.MM.yyyy',
+                  'decimalSeparator' => ',',
+                  'thousandSeparator' => ' ',
+                  'currencyCode' => 'EUR',
+            ],
+          ],
+      ];
+
+      -------------------------------------------
+
+      Temos várias funções para formatar data/tempo
+      -date
+      -time
+      -datetime
+      -timestamp
+      -relativeTime (1hour ago)
+      -duration (1day, 2minutes)
+
+      aqui o formatter na view, com as datas.
+      echo Yii::$app->formatter->asDate('now', 'yyyy-MM-dd'); // 2014-10-06
+
+      // PHP date()-format
+      echo Yii::$app->formatter->asDate('now', 'php:Y-m-d'); // 2014-10-06
+
+      temos alguns formatos que aparecem a data, se quisermos colocar
+      segue o exemplo;
+
+      short: will output 06/10/2014 for date and 15:58 for time;
+      medium: will output 6 Oct 2014 and 15:58:42;
+      long: will output 6 October 2014 and 15:58:42 GMT;
+      full: will output Monday, 6 October 2014 and 15:58:42 GMT.
+
+      -------------------------------------------
+
+      Time Zones (unix,utc,cest)
+        provavel que iremos utilizar utc quase sempre. mas..
+        
+        // formatting a UNIX timestamp as a time
+        echo Yii::$app->formatter->asTime(1412599260); // 14:41:00
+
+        // formatting a datetime string (in UTC) as a time 
+        echo Yii::$app->formatter->asTime('2014-10-06 12:41:00'); // 14:41:00
+
+        // formatting a datetime string (in CEST) as a time
+        echo Yii::$app->formatter->asTime('2014-10-06 14:41:00 CEST'); // 14:41:00
+
+      -------------------------------------------
+
+      FORMATING NUMBERS
+        temos support parecido com o que o db oferece. 
+        os formatos são
+
+      -integer
+      -decimal
+      -percent 
+      -scientific
+      -currency
+      -size 
+      -shortSize
+
+      temos outros formatos que o yii consegue usar. além do date/time e numbers
+      -raw
+      -text
+      -ntext(html encoded)
+      -paragraphs
+      -html
+      -email
+      -image
+      -url
+      -boolean
+
+      NULL VALUES
+        fica configurado com padrão do nullDisplay
+          (https://www.yiiframework.com/doc/api/2.0/yii-i18n-formatter#$nullDisplay-detail)
+      
+      LOCALIZING DATE FORMAT
+        a data vai ser formatada decorrente do "locale" que tiver configurado.
+        segue o exemplo.
+
+        Yii::$app->formatter->locale = 'en-US';
+        echo Yii::$app->formatter->asDate('2014-01-01'); // output: January 1, 2014
+
+        Yii::$app->formatter->locale = 'de-DE';
+        echo Yii::$app->formatter->asDate('2014-01-01'); // output: 1. Januar 2014
+
+        Yii::$app->formatter->locale = 'ru-RU';
+        echo Yii::$app->formatter->asDate('2014-01-01'); // output: 1 января 2014 г.
+
+      -------------------------------------------
+
+
+    PAGINAÇÃO
+      doc(https://www.yiiframework.com/doc/api/2.0/yii-data-pagination)
+
+      já vimos no front como foi feito a paginação pelo "gii" com o CRUD Generator.
+
+      -contagem total
+      -quantidade por página
+      -página atual
+
+      exemplo:
+      -------------------------------------------
+      use yii\data\Pagination;
+
+      // Cria uma query para pegar todos os artigos com status = 1
+
+      $query = Article::find()->where(['status' => 1]);
+
+      // pega o total de artigos (mas não baixa os dados ainda)
+
+      $count = $query->count();
+
+      // cria um objeto pagination com o total em $count
+
+      $pagination = new Pagination(['totalCount' => $count]);
+
+      // Lima a query usando a paginação e recupera os artigos
+
+      $articles = $query->offset($pagination->offset)
+
+          ->limit($pagination->limit)
+
+          ->all();
+      -------------------------------------------
+
+
+      aqui é a lista de botões que o usuario pode clicar, feita pelo linkPager.
+      use yii\widgets\LinkPager;
+
+      echo LinkPager::widget([
+
+          'pagination' => $pagination,
+
+      ]);
+
+      -------------------------------------------
+
+      Podemos criar url manualmente, porém requer parâmetro e criará um
+      formato apropriado contendo o parâmetro da pagina.
+
+      // especifica a rota que o URL a ser criada deve usar
+
+      // Se você não a especificar, a atual rota requerida será usado
+
+      $pagination->route = 'article/index';
+
+      // exibe: /index.php?r=article/index&page=100
+
+      echo $pagination->createUrl(100);
+
+      // exibe: /index.php?r=article/index&page=101
+
+      echo $pagination->createUrl(101);
+      
+
+      -------------------------------------------
+
+
+      ORDENAÇÃO
+        quando exibimos varias linhas de dados é preciso ser ordenado de acrodo 
+        com as colunas especificadas pelos usuarios finais.
+
+        https://www.yiiframework.com/doc/guide/2.0/pt-br/output-sorting
+
+
+      PROVEDORES DE DADOS
+        junto com paginação ordenação, temos os datas providers para encapsulamento
+        Um data provider é uma classe que implementa yii\data\DataProviderInterface. 
+        Ele suporta principalmente a recuperação de dados paginados e ordenados. 
+        Geralmente é usado para trabalhar com widgets de dados de modo que os usuários 
+        finais possam interativamente paginar e ordenar dados.
+
+        // cria o data provider configurando suas propriedades de paginação e ordenação
+        $provider = new XyzDataProvider([
+          'pagination' => [...],
+          'sort' => [...],
+        ]);
+
+        // recupera dados paginados e ordenados
+        $models = $provider->getModels();
+
+        // obtém o número de itens de dados na página atual
+        $count = $provider->getCount();
+
+        // obtém o número total de itens de dados de todas as páginas
+        $totalCount = $provider->getTotalCount();
+
+      e temos mais dataproviders para outro tipo de coisas
+      'active data provider'
+      'sql data provider'
+      'array data provider'
+      'chave de dados'
+
+      e podemos criar data providers personalizados.
+
+
+
+    WIDGETS DE DADOS
+      https://www.yiiframework.com/doc/guide/2.0/pt-br/output-data-widgets
+
+      temos detailView, single data model. da um display no model no seu formato regular
+      -------------------------------------------
+          echo DetailView::widget([
+          'model' => $model,
+          'attributes' => [
+              'title',                                           // title attribute (in plain text)
+              'description:html',                                // description attribute formatted as HTML
+              [                                                  // the owner name of the model
+                  'label' => 'Owner',
+                  'value' => $model->owner->name,            
+                  'contentOptions' => ['class' => 'bg-red'],     // HTML attributes to customize value tag
+                  'captionOptions' => ['tooltip' => 'Tooltip'],  // HTML attributes to customize label tag
+              ],
+              'created_at:datetime',                             // creation date formatted as datetime
+          ],
+      ]);
+
+    -------------------------------------------
+
+
+    Mas aqui temos com dataproviders, uma listView. aproveitando este Widget para dar
+    output em datas.
+      -------------------------------------------
+        use yii\widgets\ListView;
+        use yii\data\ActiveDataProvider;
+
+        $dataProvider = new ActiveDataProvider([
+            'query' => Post::find(),
+            'pagination' => [
+                'pageSize' => 20,
+            ],
+        ]);
+        echo ListView::widget([
+            'dataProvider' => $dataProvider,
+            'itemView' => '_post',
+        ]);
+        The _post view file could contain the following:
+
+        <?php
+        use yii\helpers\Html;
+        use yii\helpers\HtmlPurifier;
+        ?>
+        <div class="post">
+            <h2><?= Html::encode($model->title) ?></h2>
+
+            <?= HtmlPurifier::process($model->text) ?>    
+        </div>
+      -------------------------------------------
+
+      temos grid view. que faz um sistema de grid com poucas linhas de código
+      com alguma data.
+
+      -------------------------------------------
+
+        use yii\grid\GridView;
+        use yii\data\ActiveDataProvider;
+
+        $dataProvider = new ActiveDataProvider([
+            'query' => Post::find(),
+            'pagination' => [
+                'pageSize' => 20,
+            ],
+        ]);
+        echo GridView::widget([
+            'dataProvider' => $dataProvider,
+        ]);
+
+      -------------------------------------------
+
+
+      Grid Columns também. temos até classes columns e vai um monte.
+
+      FILTERING DATA
+          feito peloas colunas, como no crud generator, temos o model que faz
+          tudo as rules, scenarios e searchs
+
+          -------------------------------------------
+          <?php
+
+            namespace app\models;
+
+            use Yii;
+            use yii\base\Model;
+            use yii\data\ActiveDataProvider;
+
+            class PostSearch extends Post
+            {
+                public function rules()
+                { 
+                    // only fields in rules() are searchable
+                    return [
+                        [['id'], 'integer'],
+                        [['title', 'creation_date'], 'safe'],
+                    ];
+                }
+
+                public function scenarios()
+                {
+                    // bypass scenarios() implementation in the parent class
+                    return Model::scenarios();
+                }
+
+                public function search($params)
+                {
+                    $query = Post::find();
+
+                    $dataProvider = new ActiveDataProvider([
+                        'query' => $query,
+                    ]);
+
+                    // load the search form data and validate
+                    if (!($this->load($params) && $this->validate())) {
+                        return $dataProvider;
+                    }
+
+                    // adjust the query by adding the filters
+                    $query->andFilterWhere(['id' => $this->id]);
+                    $query->andFilterWhere(['like', 'title', $this->title])
+                          ->andFilterWhere(['like', 'creation_date', $this->creation_date]);
+
+                    return $dataProvider;
+                }
+            }
+            
+            -------------------------------------------
+
+            SEPARATE FILTER FORM
+              dai vai indo mais complexo, olhar a documentação quando tiver nesta parte
+              https://www.yiiframework.com/doc/guide/2.0/pt-br/output-data-widgets
+
+
+            e mais e mais coisas em output data
+            
+
+
+        TRABALHANDO COM CLIENT SCRIPTS  
+          quando temos html page static, e trabalhamos com ajax, essa pagina da doc
+          da support pra js e css dinamico.
+          https://www.yiiframework.com/doc/guide/2.0/pt-br/output-client-scripts
+
+          -registering scripts
+          -registering inline scripts
+          -registering scripts files
+          
+          assim como no css
+          -registering css
+          -registering inline css
+          -registering asset bundles
+
+          podemos gerar dynamic js, com uma config global do js
+
+          $options = [
+          'appName' => Yii::$app->name,
+          'baseUrl' => Yii::$app->request->baseUrl,
+          'language' => Yii::$app->language,
+          // ...
+          ];
+          $this->registerJs(
+              "var yiiOptions = ".\yii\helpers\Json::htmlEncode($options).";",
+              View::POS_HEAD,
+              'yiiOptions'
+          );
+
+          The above code will register a <script>-tag containing the JavaScript variable definition, e.g.:
+
+          var yiiOptions = {"appName":"My Yii Application","baseUrl":"/basic/web","language":"en"};
+
+
+        TEMAS
+          https://www.yiiframework.com/doc/guide/2.0/pt-br/output-theming
+          
+          temas são nossos layouts, que ficam no conjunto das view.
+
+          return [
+              'components' => [
+                  'view' => [
+                      'theme' => [
+                          'basePath' => '@app/themes/basic',
+                          'baseUrl' => '@web/themes/basic',
+                          'pathMap' => [
+                              '@app/views' => '@app/themes/basic',
+                          ],
+                      ],
+                  ],
+              ],
+          ];
+
+
+      temos "temas" para módulos, widgets;
+      herança de temas, geralmente quando tem algum feriado ou algo do tipo
+        'pathMap' => [
+            '@app/views' => [
+                '@app/themes/christmas',
+                '@app/themes/basic',
+            ],
+        ]
+
+      Neste caso, a view @app/views/site/index.php seria tematizada tanto como 
+      @app/themes/christmas/site/index.php ou @app/themes/basic/site/index.php, 
+      dependendo de qual arquivo de tema existir. Se os dois arquivos existirem, 
+      o primeiro terá precedência. Na prática, você iria manter mais arquivos de temas 
+      em @app/themes/basic e personalizar alguns deles em @app/themes/christmas.
 
 
 
