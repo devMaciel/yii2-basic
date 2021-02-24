@@ -3740,6 +3740,188 @@
   ++rbac (rolesPadrões);
 
 
+  TRABALHANDO COM PASSWORDS
+    bcrypt, criando passwords com hash
+
+    -------------------------------------------
+     $hash = Yii::$app->getSecurity()->generatePasswordHash($password);
+     -------------------------------------------
+
+     e quando vamos logar mesma coisa, validamos a password com hash.
+     
+     -------------------------------------------
+
+     if (Yii::$app->getSecurity()->validatePassword($password, $hash)) {
+        // all good, logging user in
+    } else {
+        // wrong password
+    }
+    -------------------------------------------
 
 
+    CRIPTOGRAFIA
+      só uma revisão dos seguintes assuntos
+    
+      -generating random data
+      -encryption adn decryption
+      -confirming data integrity
 
+    Generating Pseudorandom Data
+      geralmente usado para gerar algum tipo de senha ou token, como esqueci senha
+      ou algo que precise de algo provisório para poder ser trocado depois. segue
+      o exemplo de como gerar:
+
+      $key = Yii::$app->getSecurity()->generateRandomString();
+
+    Encryption and Decryption
+
+    -------------------------------------------
+    // $data and $secretKey are obtained from the form
+    $encryptedData = Yii::$app->getSecurity()->encryptByPassword($data, $secretKey);
+    // store $encryptedData to database
+    -------------------------------------------
+
+    quando queremos ler a data entao
+    -------------------------------------------
+    // $secretKey is obtained from user input, $encryptedData is from the database
+    $data = Yii::$app->getSecurity()->decryptByPassword($encryptedData, $secretKey);
+    -------------------------------------------
+
+    Confirming Data Integrity
+      confirmando integridade de alguma 'data' que pode vir de third party, ou até
+      mesmo corrompida
+
+      // $secretKey our application or user secret, $genuineData obtained from a reliable source
+      $data = Yii::$app->getSecurity()->hashData($genuineData, $secretKey);
+
+      Checks if the data integrity has been compromised
+      // $secretKey our application or user secret, $data obtained from an unreliable source
+      $data = Yii::$app->getSecurity()->validateData($data, $secretKey);
+
+    ----------------------------------------------------------------
+
+    SEGURANÇA - BOAS PRATICAS
+    (https://www.yiiframework.com/doc/guide/2.0/en/security-best-practices)
+      princípios básicos.
+      -Filter input
+      -escape output
+
+      FILTER INPUT
+        sempre devemos checar o input se são dados válidos e que o programa aceita.
+        aqui simula um erro, joga um erro proposital.
+
+        $sortBy = $_GET['sort'];
+        if (!in_array($sortBy, ['title', 'created_at', 'status'])) {
+          throw new Exception('Invalid sort value.');
+        }
+
+      e isto vai tudo de trabalhando dados, com validação e verificação
+      validate() rules()
+
+      ESCAPE OUTPUT
+        praticamente não tomar injection, ou alguem de fora injetar códigos nos
+        nossos formulários
+
+        https://www.owasp.org/index.php/Command_Injection
+        https://www.owasp.org/index.php/Code_Injection
+        https://www.owasp.org/index.php/Cross-site_Scripting_(XSS)
+
+        alguns exemplos de vulnerabilidade.
+
+      
+      SQL INJECTION é outra injeção que levamos se não tratarmos a execução dos dados
+      corretamente.
+
+      no php tínhamos o "?" para esconder o valor, e executamos com a variável.
+
+      ----------------------------------------------------------------
+      // query builder
+      $userIDs = (new Query())
+          ->select('id')
+          ->from('user')
+          ->where('status=:status', [':status' => $status])
+          ->all();
+
+      // DAO
+      $userIDs = $connection
+          ->createCommand('SELECT id FROM user where status=:status')
+          ->bindValues([':status' => $status])
+          ->queryColumn();
+      ----------------------------------------------------------------
+
+      Avoiding XSS 
+        cross-site scripting
+
+        no yii, utilizamos o avoid fazendo.
+        1-data outputted como plain text
+        2-data outputted como HTML
+
+      PLAIN TEXT
+        <?= \yii\helpers\Html::encode($username) ?>
+      
+      HTML
+        <?= \yii\helpers\HtmlPurifier::process($description) ?>
+
+      htmlPurifier, como já vimos é um pouco pesado, então as vezes é necessário
+      salvar algumas views em cache.
+
+      ----------------------------------------------------------------
+
+      Avoiding CSRF
+        no yii temos 
+        
+       1-Follow HTTP specification i.e. GET should not change application state. 
+          See RFC2616 for more details.
+       2-Keep Yii CSRF protection enabled.
+
+       praticamente nosso csrf token que tinha no laravel, e na hora de modificar
+       algum estado, não utilizar GET, porque geralmente é feito por PUT/PATCH/POST
+
+      ----------------------------------------------------------------
+
+       Avoiding file exposure
+        geralmente nossas files de upload fica no root onde não aparece nossos arquivos,
+        no caso nosso index starta dentro da page web/index.php
+
+      ----------------------------------------------------------------
+
+      Avoiding debug info and tools in production
+
+        quando estivermos em modo de produção não deixar o debug ON, para evitar
+        exposição de dados confidenciais da aplicação.
+
+      ----------------------------------------------------------------
+
+      Using secure connection over TLS
+        utilizamos request com encrypt ida e volta. como servidor SSL 
+        protected.
+
+      ----------------------------------------------------------------
+        
+        Secure Server configuration
+
+        checar todas configs do server, para ver se não tem algum exploit
+        que alguém mal intencionado possa utilizar.
+
+      ----------------------------------------------------------------
+      
+      Avoiding Host-header attacks
+
+        https://www.yiiframework.com/doc/guide/2.0/en/security-best-practices
+      
+        isso já vai do host config.
+        // Web Application configuration file
+        return [
+            'as hostControl' => [
+                'class' => 'yii\filters\HostControl',
+                'allowedHosts' => [
+                    'example.com',
+                    '*.example.com',
+                ],
+                'fallbackHostInfo' => 'https://example.com',
+            ],
+            // ...
+        ];
+
+  ==========================================
+    # CACHING
