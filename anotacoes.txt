@@ -2023,8 +2023,488 @@
   $customer->email = 'james@newexample.com';
   $customer->save();
 
+
+
+  UPDATE Counter
+
+  $post = Post::findOne(100);
+  // UPDATE `post` SET `view_count` = `view_count` + 1 WHERE `id` = 100
+  $post->updateCounters(['view_count' => 1]);
+
+
+  DEFAULT VALUES, wat
+  $customer = new Customer();
+  $customer->loadDefaultValues();
+  // $customer->xyz will be assigned the default value declared when defining the "xyz" column
+ 
+
+  em formato json chama assim
+  $query->andWhere(['=', 'json', new ArrayExpression(['foo' => 'bar'])
+
+
+  UPDATING Multiple rows
+  // UPDATE `customer` SET `status` = 1 WHERE `email` LIKE `%@example.com%`
+  Customer::updateAll(['status' => Customer::STATUS_ACTIVE], ['like', 'email', '@example.com']);
+
+
+  DELETE
+  $customer = Customer::findOne(123);
+  $customer->delete();
+
+  DELETE ALL 
+  Customer::deleteAll(['status' => Customer::STATUS_INACTIVE]);
+
+  -----------------------------------
+
+  TRABALHANDO COM TRANSACTION
+  -praticamente uma function(transaction) são várias query's juntas
+  utilizada no active record.
+
+  podemos fazer com uma anonymousFunction ou começar com static class e fazer
+  um try catch
+
+  $customer = Customer::findOne(123);
+
+  Customer::getDb()->transaction(function($db) use ($customer) {
+      $customer->id = 200;
+      $customer->save();
+      // ...other DB operations...
+  });
+
+  // or alternatively
+
+  $transaction = Customer::getDb()->beginTransaction();
+  try {
+      $customer->id = 200;
+      $customer->save();
+      // ...other DB operations...
+      $transaction->commit();
+  } catch(\Exception $e) {
+      $transaction->rollBack();
+      throw $e;
+  } catch(\Throwable $e) {
+      $transaction->rollBack();
+      throw $e;
+  }
+
+  ----------------------------------------------
+
+  tem outras coisas com o "OptimisticLock"
+  meio que salva em um hidden form, quando for salvar e verifica,
+  se tem duas ações editando a mesma coisa no banco, para não dar 
+  staleobject error.
+
+
+  --------------------------------------------------------
+
+  Podemos trabalhar com "Relações" no DB
+
+  class Customer extends ActiveRecord
+  {
+      // ...
+
+      public function getOrders()
+      {
+          return $this->hasMany(Order::className(), ['customer_id' => 'id']);
+      }
+  }
+
+  class Order extends ActiveRecord
+  {
+      // ...
+
+      public function getCustomer()
+      {
+          return $this->hasOne(Customer::className(), ['id' => 'customer_id']);
+      }
+  }
+
+
+  -hasMany()
+  -hasOne()
+
+
+  e aquui temos como pegar pelo active record, e retornar arrays
+  praticamente activerecord é a classe, então tem os métodos getters setters
+  $customer->orders; // is an array of `Order` objects
+  $customer->getOrders(); // returns an ActiveQuery instance
+
+  -------------------------------------------
+
+  Dynamic Relational Query.... especifico, talvez n seja mt bom para algumas coisas
+  a não ser em alguma função especifica mesmo.
+  $customer = Customer::findOne(123);
+
+  // SELECT * FROM `order` WHERE `customer_id` = 123 AND `subtotal` > 200 ORDER BY `id`
+  $orders = $customer->getOrders()
+      ->where(['>', 'subtotal', 200])
+      ->orderBy('id')
+      ->all();
+
+  
+  -------------------------------------------
+
+
+  temos também
+  Relações via Junction table 
+  Chaining relation,
+
+  -------------------------------
+
+  temos o uso do with(). exemplo:
+
+  Query sem o with():
+  faz 100 sql statement,1 por 1
+
+    // SELECT * FROM `customer` LIMIT 100
+  $customers = Customer::find()->limit(100)->all();
+
+  foreach ($customers as $customer) {
+      // SELECT * FROM `order` WHERE `customer_id` = ...
+      $orders = $customer->orders;
+  }
+
+  Com with() junta tudo em uma query e reduz o processamento.
+  // SELECT * FROM `customer` LIMIT 100;
+  // SELECT * FROM `orders` WHERE `customer_id` IN (...)
+  $customers = Customer::find()
+      ->with('orders')
+      ->limit(100)
+      ->all();
+
+  foreach ($customers as $customer) {
+      // no SQL executed
+      $orders = $customer->orders;
+  }
+
+  ------------------------------------------
+  mais exemplos:
+
+    // eager loading both "orders" and "country"
+  $customers = Customer::find()->with('orders', 'country')->all();
+  // equivalent to the array syntax below
+  $customers = Customer::find()->with(['orders', 'country'])->all();
+  // no SQL executed 
+  $orders= $customers[0]->orders;
+  // no SQL executed 
+  $country = $customers[0]->country;
+
+  // eager loading "orders" and the nested relation "orders.items"
+  $customers = Customer::find()->with('orders.items')->all();
+  // access the items of the first order of the first customer
+  // no SQL executed
+  $items = $customers[0]->orders[0]->items;
+
+
+  -----------------------------------------------
+  Aqui um exemplo completo com a sintax e query original do db.
+
+  // SELECT `customer`.* FROM `customer`
+  // LEFT JOIN `order` ON `order`.`customer_id` = `customer`.`id`
+  // WHERE `order`.`status` = 1
+  // 
+  // SELECT * FROM `order` WHERE `customer_id` IN (...)
+  $customers = Customer::find()
+      ->select('customer.*')
+      ->leftJoin('order', '`order`.`customer_id` = `customer`.`id`')
+      ->where(['order.status' => Order::STATUS_ACTIVE])
+      ->with('orders')
+      ->all();
+
   
 
+  -----------------------------------------------
+  temos ALIASES para db também. porém fácil de se perder.
+
+    $query->joinWith([
+      'orders' => function ($q) {
+          $q->from(['o' => Order::tableName()]);
+      },
+  ])
+
+  -----------------------------------------------
+
+
+  INVERSE RELATION, temos outra function.
+  class Customer extends ActiveRecord
+  {
+      public function getOrders()
+      {
+          return $this->hasMany(Order::className(), ['customer_id' => 'id'])->inverseOf('customer');
+      }
+  }
+
+  // SELECT * FROM `customer` WHERE `id` = 123
+  $customer = Customer::findOne(123);
+
+  // SELECT * FROM `order` WHERE `customer_id` = 123
+  $order = $customer->orders[0];
+
+  // No SQL will be executed
+  $customer2 = $order->customer;
+
+  // displays "same"
+  echo $customer2 === $customer ? 'same' : 'not the same';
+
+
+  -----------------------------------------------------
+
+
+  SAVING RELATIONS, usamos o link() ao inves de save();
+  ---maneira errada.
+    $customer = Customer::findOne(123);
+  $order = new Order();
+  $order->subtotal = 100;
+  // ...
+
+  // setting the attribute that defines the "customer" relation in Order
+  $order->customer_id = $customer->id;
+  $order->save();
+
+  ---maneira correta
+  $customer = Customer::findOne(123);
+  $order = new Order();
+  $order->subtotal = 100;
+  // ...
+
+  $order->link('customer', $customer);
+
+  ----------------------------------------------------
+
+  tem opção de CROSS-DB RELATIONS tbm.. mais complexo..
+  customizar Query's também
+  Extra fields..
+  -------------------------------------------------------
+
+  
+  MIGRATIONS
+  -- para migrar para o db, nossas tabelas criadas por codigo.
+    temos o básico de toda migration, e cria o prefix com timestamp.
+
+    -create new migrations;
+    -apply migrations;
+    -revert migrations;
+    -re-apply migrations;
+    -show migration history and status.
+
+
+  utilizamos o terminal com os comandos:
+  !!caso não encontre podemos utilizar o 
+    php yii migrate/create create_news_table
+  !!
+  
+  -Criar Migration-
+    yii migrate/create <name> 
+      ex: (yii migrate/create create_news_table)
+
+  Como fica a classe de migration criada.
+    <?php
+
+    use yii\db\Migration;
+
+    class m150101_185401_create_news_table extends Migration
+    {
+        public function up()
+        {
+
+        }
+
+        public function down()
+        {
+            echo "m101129_185401_create_news_table cannot be reverted.\n";
+
+            return false;
+        }
+
+        /*
+        // Use safeUp/safeDown to run migration code within a transaction
+        public function safeUp()
+        {
+        }
+
+        public function safeDown()
+        {
+        }
+        */
+    }
+  
+
+    ----------------------------------------------------------------
+    Aqui temos a API com os comandos que podemos utilizar;
+    https://www.yiiframework.com/doc/api/2.0/yii-db-schemabuildertrait
+
+    -------------------
+
+    Também pelo command line podemos especificar as linhas
+      yii migrate/create create_post_table --fields="title:string,body:text"
+    
+    cria-se 'automaticamente' nossas tables.
+    podemos passar parâmetros junto.
+
+      yii migrate/create create_post_table --fields="title:string(12):notNull:unique,body:text"
+
+
+    até as foreign key podem ser criadas pelo command line
+      yii migrate/create create_post_table --fields="author_id:integer:notNull:foreignKey(user),category_id:integer:defaultValue(1):foreignKey,title:string,body:text"
+
+    então nesse caso até poderia ser bom.
+
+
+    DROP TABLE na function up()
+       yii migrate/create drop_post_table --fields="title:string(12):notNull:unique,body:text"
+
+    possível também pelo command line
+
+        class m150811_220037_drop_post_table extends Migration
+        {
+            public function up()
+            {
+                $this->dropTable('post');
+            }
+
+            public function down()
+            {
+                $this->createTable('post', [
+                    'id' => $this->primaryKey(),
+                    'title' => $this->string(12)->notNull()->unique(),
+                    'body' => $this->text()
+                ]);
+            }
+        }
+
+
+    Adicionar Colunas também..
+    ADD COLUMN
+      yii migrate/create add_position_column_to_post_table --fields="position:integer"
+
+    e DROP COLUMN
+      yii migrate/create drop_position_column_from_post_table --fields="position:integer"
+
+    JUNCTION TABLE
+      yii migrate/create create_junction_table_for_post_and_tag_tables --fields="created_at:dateTime"
+
+    TRANSACTION MIGRATIONS
+
+      <?php
+      use yii\db\Migration;
+
+      class m150101_185401_create_news_table extends Migration
+      {
+          public function safeUp()
+          {
+              $this->createTable('news', [
+                  'id' => $this->primaryKey(),
+                  'title' => $this->string()->notNull(),
+                  'content' => $this->text(),
+              ]);
+
+              $this->insert('news', [
+                  'title' => 'test 1',
+                  'content' => 'content 1',
+              ]);
+          }
+
+          public function safeDown()
+          {
+              $this->delete('news', ['id' => 1]);
+              $this->dropTable('news');
+          }
+      }
+
+
+    
+    DATABASE ACESSING METHODS
+    -execute(): executing a SQL statement
+    -insert(): inserting a single row
+    -batchInsert(): inserting multiple rows
+    -update(): updating rows
+    -upsert(): inserting a single row or updating it if it exists (since 2.0.14)
+    -delete(): deleting rows
+    -createTable(): creating a table
+    -renameTable(): renaming a table
+    -dropTable(): removing a table
+    -truncateTable(): removing all rows in a table
+    -addColumn(): adding a column
+    -renameColumn(): renaming a column
+    -dropColumn(): removing a column
+    -alterColumn(): altering a column
+    -addPrimaryKey(): adding a primary key
+    -dropPrimaryKey(): removing a primary key
+    -addForeignKey(): adding a foreign key
+    -dropForeignKey(): removing a foreign key
+    -createIndex(): creating an index
+    -dropIndex(): removing an index
+    -addCommentOnColumn(): adding comment to column
+    -dropCommentFromColumn(): dropping comment from column
+    -addCommentOnTable(): adding comment to table
+    -dropCommentFromTable(): dropping comment from table
+
+
+
+    para aplicar as migrations só dar migrate
+      yii migrate
+        ou
+      php yii migrate
+
+
+    podemos escolher numero de migrations para se fazer também
+      yii migrate 3 (migra 3 tables só e assim vai indo)
+
+    para reverter as migrations temos outros comandos
+    REVERTING MIGRATIONS
+      yii migrate/down     # revert the most recently applied migration
+      yii migrate/down 3   # revert the most 3 recently applied migrations
+
+    nem todas são reversiveis, ainda mais trabalhando com banco relacional,
+    então tem que tomar cuidado.
+
+
+    tambḿe podemos reverter as migrations e upar novamente no banco
+    com REDOING MIGRATIONS
+      yii migrate/redo        # redo the last applied migration
+      yii migrate/redo 3      # redo the last 3 applied migrations
+
+    
+    REFRESHING MIGRATIONS
+      praticamente deleta todas tables e foreign keys. e aplica tudo novamente do inicio
+      yii migrate/fresh       # truncate the database and apply all migrations from the beginning
+    
+    
+    LISTAR MIGRATIONS
+      yii migrate/history     # showing the last 10 applied migrations
+      yii migrate/history 5   # showing the last 5 applied migrations
+      yii migrate/history all # showing all applied migrations
+
+      yii migrate/new         # showing the first 10 new migrations
+      yii migrate/new 5       # showing the first 5 new migrations
+      yii migrate/new all     # showing all new migrations
+    
+    
+    podemos modificar a history da migration(timestamp) ao invés
+    de refaze-la para criar outra timestamp, no caso de atualizar a migration etc.
+
+    yii migrate/mark 150101_185401                      # using timestamp to specify the migration
+    yii migrate/mark "2015-01-01 18:54:01"              # using a string that can be parsed by strtotime()
+    yii migrate/mark m150101_185401_create_news_table   # using full name
+    yii migrate/mark 1392853618                         # using UNIX timestamp
+
+
+    Podemos personalizar migration nas configs
+    -customizar/namespace/component/commandline/
+
+    MIGRATING MULTIPLE DATABASES
+      ... existe esta opção
+
+
+ 
+  ==========================================
+    # COLETANDO DADOS DE USUARIOS
+
+
+
+
+
+ 
   ==========================================
     # SEGURANÇA
 
