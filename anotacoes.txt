@@ -4419,5 +4419,75 @@
 
   ==========================================
     # TESTES  
-      
-      
+      Aqui fala basico de teste, porque faze-lo etc.
+        -Criar um novo teste que descreve uma funcionalidade a ser implementada.
+        -Execute o novo teste e verifique se ele falha. isto é esperado já que não há nenhuma implementação ainda.
+        -Escrever um código simples para fazer o novo teste passar.
+        -Executar todos os testes e garantir que todos eles passam.
+        -Melhorar código e certificar-se de testes ainda estão OK.
+
+
+      e também quando devemos e não devemos utilizar testes
+      https://www.yiiframework.com/doc/guide/2.0/pt-br/test-overview
+
+      CONFIGURANDO AMBIENTE DE TESTES
+        -codeception é a ferramenta de testes
+
+        dentro dele temos vários tipos de testes
+        -unit(teste unitário, single code)
+        -functional(cenario da perspectiva do usuario emulada no browser)
+        -acceptance(cenario da perspectiva do usuario no browser)
+
+        codeception já vem instalado no basic/advanced template.
+          caso de algum problema, aqui é como instalar ele no projeto
+          via composer.
+          
+          composer require --dev codeception/codeception
+          composer require --dev codeception/specify
+          composer require --dev codeception/verify
+
+        
+        TESTES UNITÁRIOS (https://www.yiiframework.com/doc/guide/2.0/pt-br/test-unit)
+
+          temos outros links fora da documentação para começar a testar
+          https://codeception.com/for/yii
+          * https://codeception.com/docs/05-UnitTests
+          https://phpunit.de/manual/6.5/en/writing-tests-for-phpunit.html
+
+          temos estes 3 acima,
+          e também doc para o basic/advanced
+          e tbm do framework unit testing
+
+        TESTES FUNCIONAIS
+          é parecido com o de aceitação, so que ao inves de req http
+          faz pelo POST e GET
+
+          https://codeception.com/docs/04-FunctionalTests
+
+        TESTES DE ACEITAÇÃO
+          geralmente faz as mesmas coisas de cima, porém via browser e também
+          de como usuario usa a interface, junto com ui/ux
+
+          não tem nenhum link, praticamente e o mesmo do functional.
+
+        
+        FIXTURES
+          não compreendi muito. sua proposta e setar o ambiente para um 
+          estado fixo/conhecido, então seus testes consegue ser repetidos 
+          e continuar rodando corretamente. 
+
+          parece que consegue pegar os dados dinamicamente conforme vai trocando
+          dentro de variáveis, e o testes mesmo mudando valores consegue rodar sem
+          nenhum problema.
+          https://www.yiiframework.com/doc/guide/2.0/pt-br/test-fixtures
+
+
+  ==========================================
+    #  TÓPICOS ESPECIAIS
+        
+        aqui também aparece o advanced template. o que está instalado é o basic.
+        https://github.com/yiisoft/yii2-app-advanced/tree/master/docs/guide-pt-BR
+
+        CONSTRUINDO APLICAÇÃO A PARTIR DO ZERO  
+          como se fosse o getting started, fala como iniciar a aplicação etc.
+          
