@@ -4695,5 +4695,278 @@
             e aqui é como se fosse um getting started, utilizando como micro-framework
             sobre o sistema de controllers, e até as rest api.
 
-            
+  ==========================================
+    #  WIDGETS
 
+      todos widgets são da API DOC, não tem nesse helping document.
+      então vou listar quais estão disponíveis.
+
+    aqui aparece o widget e o lista com doc e suas propriedades, mas não tem
+    nenhum tipo de imagem representativa. aqui os widgets que aparecem.
+
+    -GRIDVIEW
+    -LISTVIEW 
+    -DETAILVIEW
+    -ACTIVEFORM
+    -PJAX
+    -MENU
+    -LINKPAGER
+    -LINKSORTER
+    -WIDGETS BOOTSTRAP
+    -WIDGETS JQUERY UI
+
+  ==========================================
+    #  HELPERS, FUNÇÕES AUXILIARES
+
+      exemplo de helper é aquele Enconde:: que vimos. na questão de segurança
+      https://www.yiiframework.com/doc/guide/2.0/pt-br/helper-overview
+     
+      use yii\helpers\Html;
+      echo Html::encode('Test > test');
+
+
+    CORE HELPERS CLASSES
+      -ArrayHelper
+      -Console
+      -FileHelper
+      -FormatConverter
+      -Html
+      -HtmlPurifier
+      -Imagine (provided by yii2-imagine extension)
+      -Inflector
+      -Json
+      -Markdown
+      -StringHelper
+      -Url
+      -VarDumper
+    
+      podemos também customizar nossos helpers, com classmaps e components,
+      caso queiramos colocar alguma coisa a mais ou menos. depois ele tem alguma
+      documentação de alguns helpers que devem ser mais complexos.
+
+      ARRAY HELPER
+        pegando os valores
+        setando valores
+        pegando um valor de um array
+        checando a existencias de chaves do array
+        retornando as colunas
+        reindexando arrays
+        buiding maps
+        multidimensional sorting
+        detectando arrays types 
+        html encoding e decoding values
+        merging arrays
+        converting objects to arrays
+        testing agains arrays
+
+      HTML
+        aqui fala mais da geração de tags html, que é bastante utilizado e temos
+        o encode junto.
+        ----------------------------------------------------------------
+          HELPER
+          <?= Html::tag('p', Html::encode($user->name), ['class' => 'username']) ?>
+
+          O QUE É GERADO
+          <p class="username">samdark</p>
+        ----------------------------------------------------------------
+
+        também podemos fazer gerando classes css
+        ----------------------------------------------------------------
+          $options = ['class' => 'btn btn-default'];
+
+          if ($type === 'success') {
+              Html::removeCssClass($options, 'btn-default');
+              Html::addCssClass($options, 'btn-success');
+          }
+
+          echo Html::tag('div', 'Pwede na', $options);
+
+          // if the value of $type is 'success' it will render
+          // <div class="btn btn-success">Pwede na</div>
+        ----------------------------------------------------------------
+
+
+        para múltiplo css podemos fazer deste jeito.
+        ----------------------------------------------------------------
+        $options = ['class' => ['btn', 'btn-default']];
+
+        echo Html::tag('div', 'Save', $options);
+        // renders '<div class="btn btn-default">Save</div>'
+        ----------------------------------------------------------------
+
+        podemos usar da forma de array tbm, que tem na documentação e também
+        podemos estilizar diretamente por alguma variável, segue o exemplo:
+        ----------------------------------------------------------------
+        $options = ['style' => ['width' => '100px', 'height' => '100px']];
+
+        // gives style="width: 100px; height: 200px; position: absolute;"
+        Html::addCssStyle($options, 'height: 200px; position: absolute;');
+
+        // gives style="position: absolute;"
+        Html::removeCssStyle($options, ['width', 'height']);
+        ----------------------------------------------------------------
+
+
+        e o encode e decoding que é uma das principais funcionalidade desse
+        helper.
+        ----------------------------------------------------------------
+        $userName = Html::encode($user->name);
+        echo $userName;
+
+        $decodedUserName = Html::decode($userName);
+        ----------------------------------------------------------------
+
+
+        CRIANDO FORMS
+          <?= Html::beginForm(['order/update', 'id' => $id], 'post', ['enctype' => 'multipart/form-data']) ?>
+          <?= Html::endForm() ?>
+
+          BUTTONS
+            <?= Html::button('Press me!', ['class' => 'teaser']) ?>
+            <?= Html::submitButton('Submit', ['class' => 'submit']) ?>
+            <?= Html::resetButton('Reset', ['class' => 'reset']) ?>
+
+          INPUT FIELDS
+          ----------------------------------------------------------------
+          //type, input name, input value, options
+          <?= Html::input('text', 'username', $user->name, ['class' => $username]) ?>
+
+          //type, model, model attribute name, options
+          <?= Html::activeInput('text', $user, 'name', ['class' => $username]) ?>
+          ----------------------------------------------------------------
+
+          depois tem mais uns shortcuts, mais avançados
+          -buttonInput
+          -submitInput
+          -resetInput
+          -textInput/activeTextInput
+          -hiddenInput/activeHiddenInput
+          -passwordInput/activePasswordInput
+          -fileInput/activeFileInput
+          -textarea/activeTextarea
+
+          depois exemplos de códigos com RADIOS e CHECKBOXES
+          Dropdown list e list boxes tbm
+          Label e Errors
+
+          existe também como recuperar inputnames e values direto do model
+          com algumas funções, que pode ser útil
+          ----------------------------------------------------------------
+          // Post[title]
+          echo Html::getInputName($post, 'title');
+
+          // post-title
+          echo Html::getInputId($post, 'title');
+
+          // my first post
+          echo Html::getAttributeValue($post, 'title');
+
+          // $post->authors[0]
+          echo Html::getAttributeValue($post, '[0]authors[0]');
+          ----------------------------------------------------------------
+
+
+          podemos gerar css e scripts dentro dessa classe de HTML;
+
+          ----------------------------------------------------------------
+          <?= Html::style('.danger { color: #f00; }', ['media' => 'print']) ?>
+
+          Gives you
+
+          <style media="print">.danger { color: #f00; }</style>
+
+
+          <?= Html::script('alert("Hello!");') ?>
+
+          Gives you
+
+          <script>alert("Hello!");</script>
+          ----------------------------------------------------------------
+
+          assim como importar um certo estilo caso seja em algum navegador,
+          no caso do internet explorer.
+          ----------------------------------------------------------------
+          <?= Html::cssFile('@web/css/ie5.css', ['condition' => 'IE 5']) ?>
+
+          generates
+
+          <!--[if IE 5]>
+              <link href="http://example.com/css/ie5.css" />
+          <![endif]-->
+          ----------------------------------------------------------------
+
+          depois temos ainda generação de mais tags.
+          HYPERLINKS
+          IMAGES
+          LISTS
+
+
+        URL HELPER
+          helpers com url(https://www.yiiframework.com/doc/guide/2.0/pt-br/helper-url)
+          ----------------------------------------------------------------
+          $relativeHomeUrl = Url::home();
+          $absoluteHomeUrl = Url::home(true);
+          $httpsAbsoluteHomeUrl = Url::home('https');
+          ----------------------------------------------------------------
+
+          CRIANDO URL'S
+            utilizamos o método toRoute()
+            ----------------------------------
+            $url = Url::toRoute(['product/view', 'id' => 42]);
+
+            com parâmetros
+            ---------------------
+            // generates: /index.php?r=site/index&param1=value1&param2=value2
+            ['site/index', 'param1' => 'value1', 'param2' => 'value2']
+
+            com anchor(a tag)
+            --------------------
+            // generates: /index.php?r=site/index&param1=value1#name
+            ['site/index', 'param1' => 'value1', '#' => 'name']
+
+
+            e aqui quando cria alias.
+            --------------------------------------------
+            // /index.php?r=site/index
+            echo Url::toRoute('site/index');
+
+            // /index.php?r=site/index&src=ref1#name
+            echo Url::toRoute(['site/index', 'src' => 'ref1', '#' => 'name']);
+
+            // /index.php?r=post/edit&id=100     assume the alias "@postEdit" is defined as "post/edit"
+            echo Url::toRoute(['@postEdit', 'id' => 100]);
+
+            // http://www.example.com/index.php?r=site/index
+            echo Url::toRoute('site/index', true);
+
+            // https://www.example.com/index.php?r=site/index
+            echo Url::toRoute('site/index', 'https');
+
+            ----------------------------------------------------
+
+            temos também o url::to que é um outro tipo, que é feito com arrays.
+            tem na doc.
+
+
+            RELEMBRAR URL'S
+              Há casos que você precisa relembrar url's, e é feito de forma simples
+
+            ----------------------------------------------------
+              // Remember current URL 
+              Url::remember();
+
+              // Remember URL specified. See Url::to() for argument format.
+              Url::remember(['product/view', 'id' => 42]);
+
+              // Remember URL specified with a name given
+              Url::remember(['product/view', 'id' => 42], 'product');
+            ----------------------------------------------------
+
+            depois podemos tratar essas url para voltar com essas funções.
+            -------------------------------
+            $url = Url::previous();
+            $productUrl = Url::previous('product');
+
+
+            também tem função para saber se a url é relativa, quando tem
+            informação do host
