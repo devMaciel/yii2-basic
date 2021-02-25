@@ -4490,4 +4490,210 @@
 
         CONSTRUINDO APLICAÇÃO A PARTIR DO ZERO  
           como se fosse o getting started, fala como iniciar a aplicação etc.
+          https://www.yiiframework.com/doc/guide/2.0/pt-br/tutorial-start-from-scratch
+
+
+        APLICAÇÕES DE CONSOLE 
+          commando line "php yii"
+          temos uma lista de opções como se fosse o php artisan do laravel.
+
+          https://www.yiiframework.com/doc/guide/2.0/pt-br/tutorial-console
+
+          podemos criar também nossos próprios comandos. e outras customizações.
+
+        VALIDADORES NATIVOS
+          temos uma lista com varios validadores que o yii consegue utilizar
+          https://www.yiiframework.com/doc/guide/2.0/pt-br/tutorial-core-validators
+
+          -boolean
+          -captcha
+          -compare
+          -date
+          -default
+          -double 
+          -each
+          -email
+          -exist
+          -file
+          -filter
+          -image
+          -in(level in range)
+          -integer
+          -match(expressão regular)
+          -number
+          -required
+          -safe
+          -string
+          -trim
+          -unique
+          -url
+
+      DOCKER
+        aqui explica porque utilizar e também como instalar no yii
+        praticamente usamos para virtualizar uma maquina, deixa máquina
+        vazia simula um software identico no que irá rodar, podemos ter vários
+        servidores e arquiteturas diferentes.
+
+        https://www.yiiframework.com/doc/guide/2.0/pt-br/tutorial-docker
+
+        INTERNACIONALIZAÇÃO
+          software pode-se adaptar a diversas regiões e linguagens, sem muitas
+          mudanças
+
+          -locale
+          -language
           
+          praticamente podemos traduzir tudo com Yii::t() ou no component verificar
+          quais paginas podemos traduzir, ou traduzir tudo dentro do app, na config 
+          que mostra na url abaixo. existem varios tipos de translations. de uma 
+          simples frase até os widgets e as frameworks messages.
+          https://www.yiiframework.com/doc/guide/2.0/pt-br/tutorial-i18n
+
+
+        ENVIO DE EMAIlS
+          precisamos configurar primeiro nosso componentes 'mailer' deste jeito;
+          https://www.yiiframework.com/doc/guide/2.0/pt-br/tutorial-mailing
+
+            ----------------------------------------------------------------
+              return [
+                //....
+                'components' => [
+                    'mailer' => [
+                        'class' => 'yii\swiftmailer\Mailer',
+                        'useFileTransport' => false,
+                        'transport' => [
+                            'class' => 'Swift_SmtpTransport',
+                            'encryption' => 'tls',
+                            'host' => 'your_mail_server_host',
+                            'port' => 'your_smtp_port',
+                            'username' => 'your_username',
+                            'password' => 'your_password',
+                        ],             
+                    ],
+                ],
+            ];
+            ----------------------------------------------------------------
+
+            e praticamente podemos enviar deste jeito.
+            
+            Yii::$app->mailer->compose()
+            ->setFrom('from@domain.com')
+            ->setTo('to@domain.com')
+            ->setSubject('Message subject')
+            ->setTextBody('Plain text content')
+            ->setHtmlBody('<b>HTML content</b>')
+            ->send();
+
+
+            ele utiliza como podemos ver o swiftmailer, então só configurar o
+            envio, encryption/host/port e tudo mais.
+
+            na página temos como criar uma instancia pra emails, e também
+            como enviar múltiplos emails.
+
+            composing email, podemos fazer com text html e outras coisas,
+            mandar até algo parecido com uma página html
+
+            também explica como enviar files, (file attachment)
+            embedding images, que pega dos nossos arquivos.
+
+            para testes temos, o yii\mail\BaseMailer::useFileTransport, que ao 
+            invés de enviar o email, guarda nas nossas local files.
+
+
+          AJUSTES DE DESEMPENHO  
+            https://www.yiiframework.com/doc/guide/2.0/pt-br/tutorial-performance-tuning
+
+            uma delas é otimizar o php environment, ultimas versoes,
+            caching.
+
+            desativando debug mode, que é praticamente obrigatório quando o app está
+            em produção.
+
+            usando técnicas de armazenamento em cache.
+
+            schema caching pode ser ativado nos components, de 'db', assim salvar
+            informações relativas do schema(db), temos o 'enable,duration,name';
+
+            Combinando e minimizando os assets, já vimos dos assets bundles, ou até
+            mesmo compressar os arquivos. minimizando também.
+
+            otimizando sessão storage, aqui recomenda quando tem muito acesso, até
+            usar o DbSession storage, que armazena as sessions no banco de dados.
+
+            otimizar a database, tanto na estrutura quanto nas requisições que fizemos
+            com as query's dela.
+
+            usar asArray nas active records, quando exige uma requisição muito grande.
+
+            otimizar o autoloader do composer, geralmente o dump.
+              command line "composer dumpautoload -o" 
+            geralmente fizemos isto logo antes de colocar em produção.
+
+            processar data offline (mais complexo, melhor ler na doc)
+            Performance Profiling (algumas ferramentas disponiveis para checar
+              como está a performance do app)
+                -debug toolbar (para debugar a app)
+                -blackfire (que é para os testes de performance)
+                -XHProf (alguma coisa do php tbm)
+                -Xdebug (mais ferramenta para performance)
+
+            e escalar a aplicação, caso cresca muito, aqui vai algumas
+            coisas que devem ser feitas.
+            https://github.com/samdark/yii2-cookbook/blob/master/book/scaling.md
+
+
+          AMBIENTE DE HOSPEDAGEM COMPARTILHADA
+            https://www.yiiframework.com/doc/guide/2.0/pt-br/tutorial-shared-hosting
+
+            praticamente compartilhando as mesmas files localmente como servidor lan
+            que já foi feito no incio aqui, renomeando webroot,
+            na doc mostra como fazer isto para o template basic e advanced.
+
+            session e cookies separados também tem uma config, geralmente para o 
+            template advanced que separa o frontend e backend.
+
+          
+          USANDO TEMPLATE ENGINES
+            por padrão é o php mesmo, tem outras que o framework suporta e sugere
+            que são 'twig' e 'smarty', e podemos configurar no nosso component.
+
+            e praticamente é isto, como configurar e como utilizar estão nos seus
+            respectivos sites.
+            https://www.yiiframework.com/doc/guide/2.0/pt-br/tutorial-template-engines
+
+          
+          TRABALHANDO COM CÓDIGOS DE TERCEIROS
+            geralmente códigos de tercerios vem através de pacotes pelo Composer.
+
+            1-Modifique o arquivo composer.json da sua aplicação e informe quais 
+              pacotes Composer você deseja instalar.
+            2-Execute composer install para instalar os pacotes especificados.
+
+            elas são carregadas automaticamentes pelo autoload de classes.
+
+            caso baixamos alguma biblioteca. temos como configurar também. melhor
+            ver pela documentação.
+            https://www.yiiframework.com/doc/guide/2.0/pt-br/tutorial-yii-integration
+
+
+            podemos utilizar o Yii em sistemas de terceiros também, baixando via
+            composer
+                
+                composer global require "fxp/composer-asset-plugin:^1.4.1"
+                composer require yiisoft/yii2
+                composer install
+
+            também como fazer config esta pela documentação..
+            podemos usar Yii2 com o Yii1.
+
+
+          USANDO YII COMO UM MICROFRAMEWORK
+            https://www.yiiframework.com/doc/guide/2.0/pt-br/tutorial-yii-as-micro-framework
+
+            instando o yii de forma diferente, como micro-app.
+            e aqui é como se fosse um getting started, utilizando como micro-framework
+            sobre o sistema de controllers, e até as rest api.
+
+            
+
