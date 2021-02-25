@@ -3925,3 +3925,245 @@
 
   ==========================================
     # CACHING
+
+    cache armazena informações para não ter que precisar requisitar novamente os dados.
+      ----------------------------------------------------------------
+      CACHE DE DADOS
+        utilizamos a variável "$cache" mesmo
+
+        // tentar recuperar $data do cache
+        $data = $cache->get($key);
+
+        if ($data === false) {
+
+            // $data não foi encontrado no cache, calculá-la do zero
+
+            // armazenar $data no cache para que esta possa ser recuperada na próxima vez
+            $cache->set($key, $data);
+        }
+
+        // $data é acessível a partir daqui
+      ----------------------------------------------------------------
+
+      Components de Cache, components como sempre ficam nossas configs
+      pro cache é a mesma coisa.
+      ----------------------------------------------------------------
+          'components' => [
+          'cache' => [
+              'class' => 'yii\caching\MemCache',
+              'servers' => [
+                  [
+                      'host' => 'servidor1',
+                      'port' => 11211,
+                      'weight' => 100,
+                  ],
+                  [
+                      'host' => 'servidor2',
+                      'port' => 11211,
+                      'weight' => 50,
+                  ],
+              ],
+          ],
+      ],
+      ----------------------------------------------------------------
+
+      podemos acessar com "Yii::$app->cache"
+
+      então tem o sistema de cache suportados
+      https://www.yiiframework.com/doc/guide/2.0/pt-br/caching-data
+
+      Temos a própria API pro cache
+        -get(): recupera um registro no cache usando uma chave específica. Retorna false caso o item não for encontrado no cache ou se o registro está expirado/invalidado.
+        -set(): armazena um registro no cache identificado por uma chave.
+        -add(): armazena um registro no cache identificado por uma chave se a chave não for encontrada em cache.
+        -mget(): recupera múltiplos registros do cache com as chaves especificadas.
+        -mset(): armazena múltiplos registros no cache. Cada item identificado por uma chave.
+        -madd(): armazena múltiplos registros no cache. Cada item identificado por uma chave. Se a chave já existir em cache, o registro é ignorado.
+        -exists(): retorna se a chave específica é encontrada no cache.
+        -delete(): remove um registro do cache identificado por uma chave.
+        -flush(): remove todos os registros do cache.
+
+    $cache['var1'] = $valor1;  // equivalente a: $cache->set('var1', $valor1);
+    $valor2 = $cache['var2'];  // equivalente a: $valor2 = $cache->get('var2');
+
+
+    Expiraçao de cache, podemos controlar, com algum tipo de politica aplicada para
+    remover o cache, com tempo de expiração, ou o espaço de cache está cheio..
+    aqui um exemplo com expiração por tempo no cache.
+
+    ----------------------------------------------------------------
+    // Manter o registro em cache por até 45 segundos
+    $cache->set($chave, $registro, 45);
+
+    sleep(50);
+
+    $data = $cache->get($chave);
+    if ($registro === false) {
+        // $registro está expirado ou não foi encontrado no sistema
+    }
+    ----------------------------------------------------------------
+
+    DEPENDÊNCIASS DE CACHE
+      exemplo: dependencia na data de modificação de arquivo, o arquivo foi 
+      alterado, então qualquer arquivo com data ultrapassada no cache deve ser invalidado.
+
+      // Criar uma dependência sobre a data de modificação do arquivo exemplo.txt.
+      $dependencia = new \yii\caching\FileDependency(['fileName' => 'exemplo.txt']);
+
+      // O registro expirará em 30 segundos.
+      // Ele também pode ser invalidado antes, caso o exemplo.txt seja modificado.
+      $cache->set($key, $data, 30, $dependency);
+
+      // O cache verificará se o registro expirou.
+      // E também verificará se a dependência associada foi alterada.
+      // Ele retornará false se qualquer uma dessas condições seja atingida.
+      $data = $cache->get($key);
+
+      ----------------------------------------------------------------
+
+      na Doc existe um sumário com as dependências de cache disponíveis;
+
+      CACHE DE CONSULTA 
+        é preciso cosultar em algum lugar, ou seja, em um banco de dados ou em
+        um componente de aplicação. mais específico caso salve cache em algum lugar.
+
+      ----------------------------------------------------------------
+        $resultado = $bd->cache(function ($bd) {
+          
+            // O resultado da consulta SQL será entregue pelo cache
+            // se o cache de consulta estiver sido habilitado e o resultado da consulta for encontrado em cache
+            return $bd->createCommand('SELECT * FROM clientes WHERE id=1')->queryOne();
+
+        });
+      ----------------------------------------------------------------
+  
+      pode ser usado pelo data access objects(DAO - banco de dados) ou com
+      as classes de Active Record.
+
+      $resultado = Cliente::getDb()->cache(function ($bd) {
+          return Cliente::find()->where(['id' => 1])->one();
+      });
+
+      e outras configurações que o cache de consulta tem,
+      -enableQueryCache
+      -queryCacheDuration
+      -queryCache
+
+      utilizamos o cache de consulta desta maneira.
+      ----------------------------------------------------------------
+      $duracao = 60;     // armazenar os resultados em cache por 60 segundos
+      $dependencia = ...;  // alguma dependência opcional
+
+      $result = $db->cache(function ($db) {
+
+          // ... executar consultas SQL aqui ...
+
+          return $result;
+
+      }, $duracao, $dependencia);
+      ----------------------------------------------------------------
+
+      CACHE DE FRAGMENTOS
+        praticamente fragmentar o cache, nesse trecho de código começamos
+        um bloco para armazenar tudo em cache.. com begincache() endcache()
+        ----------------------------------------------------------------
+        if ($this->beginCache($id)) {
+
+            // ... gere o conteúdo aqui ...
+
+            $this->endCache();
+        }
+        ----------------------------------------------------------------
+
+        aqui tem outros parâmetros depois do $id do begincache que é a duration
+        por default é 60s.
+        ----------------------------------------------------------------
+        if ($this->beginCache($id, ['duration' => 3600])) {
+
+            // ... gerar o conteúdo aqui ...
+
+            $this->endCache();
+        }
+        ----------------------------------------------------------------
+
+        cache pode ter dependências também.
+        ----------------------------------------------------------------
+        $dependency = [
+            'class' => 'yii\caching\DbDependency',
+            'sql' => 'SELECT MAX(atualizado_em) FROM post',
+        ];
+
+        if ($this->beginCache($id, ['dependency' => $dependency])) {
+
+            // ... gere o conteúdo aqui ...
+
+            $this->endCache();
+        }
+        ----------------------------------------------------------------
+
+        ['variations'] como idioma também é possível
+        https://www.yiiframework.com/doc/guide/2.0/pt-br/caching-fragment
+
+        e outros conceitos como
+        toggling caching
+        nested caching
+        conteúdo dinâmico
+        
+
+        CACHE DE PÁGINA
+          fizemos por meio de components, para salvar uma página inteira no cache
+          por tempo que desejarmos nos "behaviors"
+
+          ----------------------------------------------------------------
+          public function behaviors()
+          {
+              return [
+                  [
+                      'class' => 'yii\filters\PageCache',
+                      'only' => ['index'],
+                      'duration' => 60,
+                      'variations' => [
+                          \Yii::$app->language,
+                      ],
+                      'dependency' => [
+                          'class' => 'yii\caching\DbDependency',
+                          'sql' => 'SELECT COUNT(*) FROM post',
+                      ],
+                  ],
+              ];
+          }
+          ----------------------------------------------------------------
+
+          CACHE HTTP
+          https://www.yiiframework.com/doc/guide/2.0/pt-br/caching-http
+
+            funciona com requisições GET e HEAD sendo:
+            -last-Modified
+            -Etag 
+            -Cache-Control 
+
+            LAST-MODIFIED
+              utiliza um timestamp, quando o navegador visita uma página pela
+              primeira vez, é gerado esta pagina no server. caso não tenha tido 
+              nenhuma alteração da página por meio de posts e for o mesmo conteúdo
+              ele pega do cache e renderiza a página do cache.
+
+            CABEÇALHO Etag
+              (entity tag) usa um 'hash' para representar o conteúdo, se a página
+              for alterada, o hash irá mudar também. e compara os dois hashs para ver
+              se tem alguma alteração, caso tenha, irá remontar novamente a página.
+
+            CACHE-CONTROL 
+              especifica políticas gerais para a página.
+
+            existe outros tópicos como
+            -limitador de cache na sessão
+            -implicações para SEO.
+
+                
+  ==========================================
+    # WEB SERVICES RESTFUL 
+
+       
+
+
