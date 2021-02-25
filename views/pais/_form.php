@@ -11,7 +11,8 @@ use yii\widgets\ActiveForm;
 <div class="pais-form">
 
     <?php $form = ActiveForm::begin(); ?>
-
+    
+    <!-- $model vem do bd, com nome da table.  -->
     <?= $form->field($model, 'codigo')->textInput(['maxlength' => true]) ?>
 
     <?= $form->field($model, 'nome')->textInput(['maxlength' => true]) ?>

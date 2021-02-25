@@ -4164,6 +4164,260 @@
   ==========================================
     # WEB SERVICES RESTFUL 
 
-       
+        INTRODUÇÃO
+
+        O Yii fornece um conjunto de ferramentas para simplificar a tarefa de implementar APIs RESTful Web Service. Em particular, o Yii suporta os seguintes recursos sobre APIs RESTful:
+
+          -Prototipagem rápida com suporte para APIs comuns de Active Record;
+          -Negociação de formato do Response (suporte JSON e XML por padrão);
+          -Serialização de objeto configurável com suporte a campos de saída selecionáveis;
+          -Formatação adequada para a coleção e dados e validação de erros;
+          -Suporte a HATEOAS;
+          -Roteamento eficiente com verificação dos verbs (métodos) HTTP;
+          -Construído com suporte aos métodos OPTIONS e HEAD;
+          -Autenticação e autorização;
+          -Data caching e HTTP caching;
+          -Limitação de taxa;
+
+        https://www.yiiframework.com/doc/guide/2.0/pt-br/rest-quick-start
+      
 
 
+        RECURSOS 
+          da api restful
+
+          // retorna todos os campos declarados em fields()
+          http://localhost/users
+
+          // retorna apenas os campos id e email, desde que estejam declarados em fields()
+          http://localhost/users?fields=id,email
+
+          // retorna todos os campos de fields() e o campo profile se este estiver no extraFields()
+          http://localhost/users?expand=profile
+
+          // retorna apenas o campo id, email e profile, desde que estejam em fields() e extraFields()
+          http://localhost/users?fields=id,email&expand=profile
+
+        também há possibilidade de reescrever as fields.
+
+        LINKS - existe o HATEOAS(hypermedia as the engine of applications state)
+          é um conjunto de hyperlinks, servidas pela api.
+
+        COLLECTIONS - são coleções de ista de objetos do mesmo tipo. parecido com 
+        data provider.
+
+        ----------------------------------------------------------------
+
+        namespace app\controllers;
+
+        use yii\rest\Controller;
+        use yii\data\ActiveDataProvider;
+        use app\models\Post;
+
+        class PostController extends Controller
+        {
+          public function actionIndex()
+          {
+              return new ActiveDataProvider([
+                  'query' => Post::find(),
+              ]);
+          }
+        }
+
+        ----------------------------------------------------------------
+
+        Quando envia a resposta com a API RESTFUL, a pagina serializa como um array.
+
+
+        CONTROLLERS
+          é bem parecido com controladores normais, porém com restful api
+          https://www.yiiframework.com/doc/guide/2.0/pt-br/rest-controllers
+
+          podemos customizar as açoes req http
+          ----------------------------------------------------------------
+          public function actions()
+          {
+            $actions = parent::actions();
+
+            // desabilita as ações "delete" e "create"
+            unset($actions['delete'], $actions['create']);
+
+            // customiza a preparação do  data provider com o método "prepareDataProvider()"
+            $actions['index']['prepareDataProvider'] = [$this, 'prepareDataProvider'];
+
+            return $actions;
+          }
+
+          public function prepareDataProvider()
+          {
+            // preparar e retornar um data provider para a ação "index"
+          }
+          ----------------------------------------------------------------
+
+          para isso temos ações para verificar accesso também, exista na doc a sintax.
+          que é feito por checkAccess() podemos customizar as mensagens e tudo mais também.
+
+
+        ROTEAMENTO  
+          temos nosso component na web com o UrlManager, com pretty url que 
+          está comentado.
+
+          temos os comandos:
+
+          [
+            'PUT,PATCH users/<id>' => 'user/update',
+            'DELETE users/<id>' => 'user/delete',
+            'GET,HEAD users/<id>' => 'user/view',
+            'POST users' => 'user/create',
+            'GET,HEAD users' => 'user/index',
+            'users/<id>' => 'user/options',
+            'users' => 'user/options',
+          ]
+
+          e os endpoints, que podemos acessar com a api restfull
+
+            -GET /users: lista todos os usuários página por página;
+            -HEAD /users: mostrar a informações gerais da listagem de usuários;
+            -POST /users: cria um novo usuário;
+            -GET /users/123: retorna detalhes do usuário 123;
+            -HEAD /users/123: mostrar a informações gerais do usuário 123;
+            -PATCH /users/123 and PUT /users/123: atualiza o usuário 123;
+            -DELETE /users/123: deleta o usuário 123;
+            -OPTIONS /users: exibe os métodos suportados pela URL /users;
+            -OPTIONS /users/123: exibe os métodos suportados pela URL /users/123.
+
+          podemos ativar/desativar algumas actions, e tambem podemos Adicionar
+          extraPatterns..
+
+          Limitando as actions
+          [
+            'class' => 'yii\rest\UrlRule',
+            'controller' => 'user',
+            'except' => ['delete', 'create', 'update'],
+          ],
+
+          Adicionando extraPatterns
+          [
+            'class' => 'yii\rest\UrlRule',
+            'controller' => 'user',
+            'extraPatterns' => [
+                'GET search' => 'search',
+            ],
+          ]
+
+
+          FORMATAÇÃO DE RESPOSTAS
+            praticamente mais components para poder ver a resposta da api
+            e serializar corretamente para ficar interessante a Formatação
+            https://www.yiiframework.com/doc/guide/2.0/pt-br/rest-response-formatting
+
+          
+          AUTENTICAÇÃO
+            API RESTful são stateless, não deve ser utilizado session e cookies.
+            deve retornar um estado de autenticação, que nao pode ser mantido
+            em session/cookies. feito com access token, existe toda uma lógica por
+            tras para evitar ataques de fora, e é feito com https.
+            https://www.yiiframework.com/doc/guide/2.0/pt-br/rest-authentication
+
+            Autorização, vem depois de autenticado, o usuário ainda precisa ser
+            verificado se tem autorização para modificar algo.
+
+
+          LIMITADOR DE ACESSO
+          https://www.yiiframework.com/doc/guide/2.0/pt-br/rest-rate-limiting
+            limite de requisições que o usuário poderá fazer. podemos definir 
+            quantas req poderá fazer; feito com o \RateLimiterInterface
+
+            -getRateLimit() -max de pedido reqs
+            -loadAllowance() -numero restante de reqs
+            -saveAllowance() -salva nº restante de reqs e hora atual.
+
+            fica dentro dos behaviors
+            ----------------------------------------------------------------
+            public function behaviors()
+            {
+              $behaviors = parent::behaviors();
+              $behaviors['rateLimiter']['enableRateLimitHeaders'] = false;
+
+              return $behaviors;
+            }
+            ----------------------------------------------------------------
+
+          VERSIONAMENTO
+          https://www.yiiframework.com/doc/guide/2.0/pt-br/rest-versioning
+            podemos fazer com modules, dentro de pastas com versões. a estrutura
+            fica deste jeito.
+
+            api/
+              common/
+                  controllers/
+                      UserController.php
+                      PostController.php
+                  models/
+                      User.php
+                      Post.php
+              modules/
+                  v1/
+                      controllers/
+                          UserController.php
+                          PostController.php
+                      models/
+                          User.php
+                          Post.php
+                      Module.php
+                  v2/
+                      controllers/
+                          UserController.php
+                          PostController.php
+                      models/
+                          User.php
+                          Post.php
+                      Module.php
+
+            temos nosso common de todas as versões, e segue a mesma estruturação de
+            pastas para todas versoes, e o nome da versão é a pasta que salva todos
+            dados das versões.
+
+
+            TRATAMENTO DE ERROS
+
+              utiliza os verb http, e o yii utiliza alguns status para mostrar
+              o que foi feito. alguns são parecidos com o que já conhecemos
+              mas outros tem algumas modificações do framework.
+
+                -200: OK. Tudo funcionou conforme o esperado;
+                -201: Um recurso foi criado com êxito em resposta a uma requisição POST. O cabeçalho location contém a URL que aponta para o recurso recém-criado;
+                -204: A requisição foi tratada com sucesso e a resposta não contém nenhum conteúdo no corpo (por exemplo uma requisição DELETE);
+                -304: O recurso não foi modificado. Você pode usar a versão em cache;
+                -400: Requisição malfeita. Isto pode ser causado por várias ações por parte do usuário, tais como o fornecimento de um JSON inválido no corpo da requisição, fornecendo parâmetros inválidos, etc;
+                -401: Falha de autenticação;
+                -403: O usuário autenticado não tem permissão para acessar o recurso da API solicitado;
+                -404: O recurso requisitado não existe;
+                -405: Método não permitido. Favor verificar o cabeçalho Allow para conhecer os métodos HTTP permitidos;
+                -415: Tipo de mídia não suportada. O número de versão ou o content type requisitado são inválidos;
+                -422: Falha na validação dos dados (na resposta a uma requisição POST, por exemplo). Por favor, verifique o corpo da resposta para visualizar a mensagem detalhada do erro;
+                -429: Excesso de requisições. A requisição foi rejeitada devido a limitação de taxa;
+                -500: Erro interno do servidor. Isto pode ser causado por erros internos do programa.
+
+
+              Podemos customizar as respostas de erros
+              https://www.yiiframework.com/doc/guide/2.0/pt-br/rest-error-handling
+
+              {
+                "success": false,
+                "data": {
+                    "name": "Not Found Exception",
+                    "message": "The requested resource was not found.",
+                    "code": 0,
+                    "status": 404
+                }
+              }
+
+              porém é preciso ir nos components e response adicionar um código
+              paa checar se foi enviado realmente e saiu a reposta esperada.
+              com o on beforeSend.
+
+  ==========================================
+    # TESTES  
+      
+      

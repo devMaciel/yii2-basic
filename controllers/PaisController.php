@@ -8,6 +8,7 @@ use app\models\PaisSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+// use yii\rest\ActiveController;
 
 /**
  * PaisController implements the CRUD actions for Pais model.
@@ -25,6 +26,11 @@ class PaisController extends Controller
                 'actions' => [
                     'delete' => ['POST'],
                 ],
+            ],
+            'request' => [
+                'parsers' => [
+                    'application/json' => 'yii\web\JsonParser',
+                ]
             ],
         ];
     }
