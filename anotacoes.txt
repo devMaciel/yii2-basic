@@ -4969,4 +4969,16 @@
 
 
             também tem função para saber se a url é relativa, quando tem
-            informação do host
+            informação do hosthttp://dev02.local.viageo/teste/joaopedro/web/index.php/api
+
+
+==========================================================================================
+= REST API
+===========
+?r=gii
+urlManagerPrettyUrl
+crud generator
+module generator
+--MODULE-CLASS: app\modules\api\ApiModule
+--MODULE ID: api
+http://dev02.local.viageo/teste/joaopedro/web/index.php/api
